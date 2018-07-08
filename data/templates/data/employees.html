@@ -1,0 +1,89 @@
+{% extends 'data/base.html' %}
+{% block title %}This Northwind{% endblock %}
+{% block body %}
+
+    <div class="row">
+        <div class="col-lg-4 col-lg-offset-4">
+            <input type="search" id="empfname" value="" class="form-control" placeholder="Search by provider names" onkeyup="showName(this.value)">
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-10">
+            <table class="table" id="emp-table">
+                <thead>
+                    <tr>
+                        <th>Provider Name</th>
+                        <th>Second column</th>
+                        <th>Third column</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                </tbody>
+            </table>
+            <hr>
+        </div>
+    </div>
+
+    <div id="timeline"></div> <!-- When vew by month !-->
+    <script>
+    var endpoint = {% url 'this_view' %};
+    var out = '';
+
+    function showName(str) {
+        $.ajax({
+            method: "POST",
+            url: endpoint,
+            data: {
+                'empfname': $("#empfname").val()
+            },
+            dataType: "json",
+            success: function (json) {
+                $("#emp-table tbody > tr").remove();
+                $.each(json, function(idx, obj){
+                    var tr = $('<tr>');
+                    var td = $('<td>').text(obj['provider_name']);
+                    tr.append(td);
+                    $('#emp-table tbody').append(tr);
+                    //out += obj['provider_name'] + ', ';
+                });
+                console.log(json);
+            },
+            error: function (error_data) {
+                $('#emp-name-list').text({{ name_list.firstname }});
+                console.log("error");
+                console.log(error_data);
+            }
+        })
+    }
+    </script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript">
+  google.charts.load("current", {packages:["timeline"]});
+  google.charts.setOnLoadCallback(drawChart);
+  function drawChart() {
+
+    var container = document.getElementById('timeline');
+    var chart = new google.visualization.Timeline(container);
+    var dataTable = new google.visualization.DataTable();
+    dataTable.addColumn({ type: 'string', id: 'Room' });
+    dataTable.addColumn({ type: 'string', id: 'Name' });
+    dataTable.addColumn({ type: 'date', id: 'Start' });
+    dataTable.addColumn({ type: 'date', id: 'End' });
+    dataTable.addRows([
+      [ 'Magnolia Room', 'Beginning JavaScript',       new Date(0,0,0,12,0,0),  new Date(0,0,0,13,30,0) ],
+      [ 'Magnolia Room', 'Intermediate JavaScript',    new Date(0,0,0,14,0,0),  new Date(0,0,0,15,30,0) ],
+      [ 'Magnolia Room', 'Advanced JavaScript',        new Date(0,0,0,16,0,0),  new Date(0,0,0,17,30,0) ],
+      [ 'Willow Room',   'Beginning Google Charts',    new Date(0,0,0,12,30,0), new Date(0,0,0,14,0,0) ],
+      [ 'Willow Room',   'Intermediate Google Charts', new Date(0,0,0,14,30,0), new Date(0,0,0,16,0,0) ],
+      [ 'Willow Room',   'Advanced Google Charts',     new Date(0,0,0,16,30,0), new Date(0,0,0,18,0,0) ]]);
+    console.log(dataTable);
+    var options = {
+      timeline: { colorByRowLabel: true }
+    };
+
+    chart.draw(dataTable, options);
+  }
+
+</script>
+{% endblock %}
