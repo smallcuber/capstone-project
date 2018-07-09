@@ -1,0 +1,17 @@
+{% extends 'data/base.html' %}
+{% block title %}Patient Detail{% endblock %}
+{% block body %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1> 12321</h1>
+{% for info, value in appt_counts.items %}
+    <h1>{{ info }}: {{ value }} </h1>
+{% endfor %}
+</body>
+</html>
+{% endblock %}

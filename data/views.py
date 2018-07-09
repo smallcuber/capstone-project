@@ -1,15 +1,11 @@
 from django.http import JsonResponse, HttpResponse
 from django.core.exceptions import ObjectDoesNotExist
 from django.views import generic, View
-from django.http import Http404
+from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 from .models import Event
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from django.core import serializers
 from django.db.models import Value, Count, Q
-from django.db.models.functions import Concat
 from django.views.decorators.csrf import csrf_exempt
 import json
 
@@ -39,10 +35,9 @@ def providers(request):
 
 
 def scheduleview_list(max_results=0):
-    schedule_list_query = Event.objects.order_by('appointment_date').values_list('provider_name',
-                                                        'patient_id',
-                                                        'appointment_date',
-                                                        'appt_durantion')[:max_results]
+    schedule_list_query = Event.objects.order_by('appointment_date').\
+                              values_list('provider_name', 'patient_id','appointment_date', 'appt_durantion')[
+                          :max_results]
     schedule_list = [[str(field) for field in schedule] for schedule in schedule_list_query]
     return schedule_list
 
@@ -58,11 +53,11 @@ def scheduleview(request):  #
     return render(request, template, {'array': json.dumps(array)})
 
 
-def patientovview_list(start_date, ende_date):
+def patientovview_list(start_date, ende_date):  # Three types of event: Completed, No Show, Canceled
     result = [['Event', 'Counts']]
     try:
-        patientov_list_query_success = Event.objects.\
-            values_list('checkout_time').\
+        patientov_list_query_success = Event.objects. \
+            values_list('checkout_time'). \
             filter(checkout_time__isnull=False,
                    appointment_date__gte=start_date,
                    appointment_date__lte=ende_date)
@@ -70,16 +65,16 @@ def patientovview_list(start_date, ende_date):
     except ObjectDoesNotExist:
         result.append(['Completed', 0])
     try:
-        patientov_list_query_noshow = Event.objects.\
+        patientov_list_query_noshow = Event.objects. \
             values_list('noshow_flag'). \
             filter(noshow_flag__isnull=False,
                    appointment_date__gte=start_date,
                    appointment_date__lte=ende_date)
-        result.append(['No Show',  patientov_list_query_noshow.count()])
+        result.append(['No Show', patientov_list_query_noshow.count()])
     except ObjectDoesNotExist:
         result.append(['No Show', 0])
     try:
-        patientov_list_query_canceled = Event.objects.\
+        patientov_list_query_canceled = Event.objects. \
             values_list('canceled_flag'). \
             filter(canceled_flag__isnull=False,
                    appointment_date__gte=start_date,
@@ -93,12 +88,12 @@ def patientovview_list(start_date, ende_date):
 def patientovview_cr_list(start_date, end_date):
     result = [['Reason', 'Counts']]
     try:
-        cancel_reason_list_query = Event.objects.\
-            values('cancelation_reason').all().\
+        cancel_reason_list_query = Event.objects. \
+            values('cancelation_reason').all(). \
             filter(appointment_date__gte=start_date,
-                   appointment_date__lte=end_date).\
-            exclude(cancelation_reason='NULL').\
-            annotate(total=Count('cancelation_reason')).\
+                   appointment_date__lte=end_date). \
+            exclude(cancelation_reason='NULL'). \
+            annotate(total=Count('cancelation_reason')). \
             order_by('-total')
         print(cancel_reason_list_query)
     except ObjectDoesNotExist:
@@ -129,6 +124,43 @@ def patientovview(request):
     return render(request, template)
 
 
+class PatientInfo(generic.ListView):
+    model = Event
+    template_name = 'data/patient_detail.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['appt_counts'] = {}
+        try:  # Individual canceled appointments count
+            canceled_query = self.model.objects. \
+                values_list('canceled_flag'). \
+                filter(patient_id=self.kwargs['patient_id'],
+                       canceled_flag__isnull=False)
+            context['appt_counts'].update({'canceled': canceled_query.count()})
+        except ObjectDoesNotExist:
+            context['appt_counts'].update({'canceled': 0})
+
+        try:  # Individual no show appointments count
+            canceled_query = self.model.objects. \
+                values_list('noshow_flag'). \
+                filter(patient_id=self.kwargs['patient_id'],
+                       noshow_flag__isnull=False)
+            context['appt_counts'].update({'noshow': canceled_query.count()})
+        except ObjectDoesNotExist:
+            context['appt_counts'].update({'noshow': 0})
+
+        try:  # Individual completed appointments count
+            canceled_query = self.model.objects. \
+                values_list('checkout_time'). \
+                filter(patient_id=self.kwargs['patient_id'],
+                       noshow_flag__isnull=True,
+                       canceled_flag__isnull=True)
+            context['appt_counts'].update({'completed': canceled_query.count()})
+        except ObjectDoesNotExist:
+            context['appt_counts'].update({'completed': 0})
+
+        return context
+
     # template_name = 'display/this.html'
     #
     # def get(self, request):ve
@@ -137,7 +169,6 @@ def patientovview(request):
     #     except Categories.DoesNotExist:
     #         raise Http404('The object does not exist.')
     #     return render(request, self.template_name, {'this_query': this_query})
-
 
 # def get_data(request):
 #     try:
