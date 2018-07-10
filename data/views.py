@@ -15,15 +15,15 @@ User = get_user_model()
 def providers_list(max_results=0, name_starts_with=''):
     name_list = []
     if name_starts_with:
-        name_list_query = Event.objects.values('provider_name').filter(
-            provider_name__contains=name_starts_with).annotate(Count("provider_name"))[:max_results]
+        name_list_query = Event.objects.values('provider_scheduled', 'provider_name').filter(
+            provider_name__contains=name_starts_with).annotate(provider_count=Count("provider_name"))[:max_results]
         name_list = [name for name in name_list_query]
     return name_list
 
 
 @csrf_exempt
 def providers(request):
-    template = 'data/employees.html'
+    template = 'data/providers.html'
     name_list = []
     if request.is_ajax() and request.method == 'POST':
         print(request.POST['empfname'])
@@ -124,7 +124,7 @@ def patientovview(request):
     return render(request, template)
 
 
-class PatientInfo(generic.ListView):
+class PatientInfo(generic.ListView):  # Individual patient view
     model = Event
     template_name = 'data/patient_detail.html'
 
@@ -158,6 +158,36 @@ class PatientInfo(generic.ListView):
             context['appt_counts'].update({'completed': canceled_query.count()})
         except ObjectDoesNotExist:
             context['appt_counts'].update({'completed': 0})
+
+        return context
+
+
+class ProviderInfo(generic.ListView):  # Individual provider view
+    model = Event
+    template_name = 'data/provider_detail.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['providerInfo'] = {}
+        try:  # Individual canceled appointments count
+            completed_query = self.model.objects. \
+                values_list('provider_scheduled'). \
+                filter(provider_scheduled=self.kwargs['provider_scheduled'],
+                       noshow_flag__isnull=True,
+                       canceled_flag__isnull=True)
+            context['providerInfo'].update({'Completed': completed_query.count()})
+        except ObjectDoesNotExist:
+            context['providerInfo'].update({'Completed': 0})
+
+        try:  # Individual canceled appointments count
+            completed_query = self.model.objects. \
+                values_list('provider_scheduled'). \
+                filter(provider_scheduled=self.kwargs['provider_scheduled'],
+                       noshow_flag__isnull=True,
+                       canceled_flag__isnull=True)
+            context['providerInfo'].update({'Completed': completed_query.count()})
+        except ObjectDoesNotExist:
+            context['providerInfo'].update({'Completed': 0})
 
         return context
 

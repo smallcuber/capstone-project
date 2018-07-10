@@ -13,8 +13,6 @@
                 <thead>
                     <tr>
                         <th>Provider Name</th>
-                        <th>Second column</th>
-                        <th>Third column</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -27,7 +25,7 @@
 
     <div id="timeline"></div> <!-- When vew by month !-->
     <script>
-    var endpoint = {% url 'this_view' %};
+    var endpoint = {% url 'providers' %};
     var out = '';
 
     function showName(str) {
@@ -42,7 +40,9 @@
                 $("#emp-table tbody > tr").remove();
                 $.each(json, function(idx, obj){
                     var tr = $('<tr>');
-                    var td = $('<td>').text(obj['provider_name']);
+                    var td = $('<td>');
+                    var a = $('<a>').text(obj['provider_name']);
+                    td.append('<a href="./' + obj['provider_scheduled'] + '">' + obj['provider_name'] + "<a>");
                     tr.append(td);
                     $('#emp-table tbody').append(tr);
                     //out += obj['provider_name'] + ', ';
