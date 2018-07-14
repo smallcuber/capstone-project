@@ -1,17 +1,50 @@
 {% extends 'data/base.html' %}
 {% block title %}Patient Detail{% endblock %}
 {% block body %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 <h1> 12321</h1>
 {% for info, value in providerInfo.items %}
     <h1>{{ info }}: {{ value }} </h1>
 {% endfor %}
-</body>
-</html>
+    <div class="w3" style="padding: 15px">
+
+      <div class="w3-white w3-text-grey w3-card-4">
+        <div class="w3-display-container">
+		<!-- Can be used for picture on profile -->
+
+          <div class="w3-display-bottomleft w3-container w3-text-black">
+            <h2></h2> <!--Provider name !-->
+          </div>
+        </div>
+        <div class="w3-container">
+          <p>Provider</p> <!-- this could link to provider's position !-->
+          <p>Department</p> <!--provider's department !-->
+          <p>belluj@mcmaster.ca</p> <!--provider's email !-->
+          <p>(555) 555-5555</p>  <!--provider's telephone !-->
+            {{ providerInfo.completed_rate }}
+          <hr>
+
+          <p class="w3-large"><b><i class="fa fa-asterisk fa-fw w3-margin-right w3-text-teal"></i>Statistics</b></p>
+          <p>Success Appointments %</p>
+          <div class="w3-light-grey w3-round-xlarge w3-small">
+            <div class="w3-container w3-center w3-round-xlarge w3-teal" style="width:{{ providerInfo.completed_rate }}%">{{ providerInfo.completed_rate }}%</div>
+          </div>
+          <p>% Over Time on Average</p>
+          <div class="w3-light-grey w3-round-xlarge w3-small">
+            <div class="w3-container w3-center w3-round-xlarge w3-teal" style="width:10%">
+              <div class="w3-center w3-text-white">10%</div>
+            </div>
+          </div>
+          <p>No Show %</p>
+          <div class="w3-light-grey w3-round-xlarge w3-small">
+            <div class="w3-container w3-center w3-round-xlarge w3-teal" style="width:15%">15%</div>
+          </div>
+          <br>
+
+        </div>
+      </div><br>
+
+    <!-- End Left Column -->
+    </div>
+
 {% endblock %}

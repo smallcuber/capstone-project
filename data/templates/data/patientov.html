@@ -2,10 +2,10 @@
 {% block title %}Patient Overview{% endblock %}
 {% block body %}
     <form method="post" id="empname" data-validate-username-url="#">
-        <span>Full Name</span><input id="empfname" onkeyup="showName(this.value)" value=""/>
+        <span for='empfname'>Search by patient ID </span>
+        <input id="empfname" onkeyup="showName(this.value)" value=""/>
+        <input type="submit" class="button" />
     </form>
-
-    <p id="test">Employee names</p>
 
     <div class="align-center" id="patientov" style="height: 400px;"></div>
     <div class="align-center" id="patientov-canceled-reason" style="height: 400px;"></div>

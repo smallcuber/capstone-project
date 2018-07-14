@@ -169,25 +169,31 @@ class ProviderInfo(generic.ListView):  # Individual provider view
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['providerInfo'] = {}
-        try:  # Individual canceled appointments count
-            completed_query = self.model.objects. \
+        try:  # Individual appointments sum
+            total_query = self.model.objects. \
                 values_list('provider_scheduled'). \
-                filter(provider_scheduled=self.kwargs['provider_scheduled'],
-                       noshow_flag__isnull=True,
-                       canceled_flag__isnull=True)
-            context['providerInfo'].update({'Completed': completed_query.count()})
+                filter(provider_scheduled=self.kwargs['provider_scheduled'])
+            context['providerInfo'].update({'total_count': total_query.count()})
         except ObjectDoesNotExist:
-            context['providerInfo'].update({'Completed': 0})
+            context['providerInfo'].update({'total_count': 0})
 
-        try:  # Individual canceled appointments count
+        try:  # Individual successful appointments count
             completed_query = self.model.objects. \
                 values_list('provider_scheduled'). \
                 filter(provider_scheduled=self.kwargs['provider_scheduled'],
                        noshow_flag__isnull=True,
                        canceled_flag__isnull=True)
-            context['providerInfo'].update({'Completed': completed_query.count()})
+            context['providerInfo'].update({'completed_count': completed_query.count()})
         except ObjectDoesNotExist:
-            context['providerInfo'].update({'Completed': 0})
+            context['providerInfo'].update({'completed_count': 0})
+
+        try:  # Calculate the successful appointment rate and return it
+            complete_rate = round((completed_query.count() * 100 / total_query.count()), 2)
+            context['providerInfo'].update({'completed_rate': complete_rate})
+            context['providerInfo'].update({'data_error': False})
+        except ZeroDivisionError:
+            context['providerInfo'].update({'completed_rate': 0})
+            context['providerInfo'].update({'data_error': True})
 
         return context
 
