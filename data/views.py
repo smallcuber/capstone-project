@@ -35,8 +35,8 @@ def providers(request):
 
 
 def scheduleview_list(max_results=0):
-    schedule_list_query = Event.objects.order_by('appointment_date').\
-                              values_list('provider_name', 'patient_id','appointment_date', 'appt_durantion')[
+    schedule_list_query = Event.objects.order_by('appointment_date'). \
+                              values_list('provider_name', 'patient_id', 'appointment_date', 'appt_durantion')[
                           :max_results]
     schedule_list = [[str(field) for field in schedule] for schedule in schedule_list_query]
     return schedule_list
@@ -85,7 +85,7 @@ def patientovview_list(start_date, ende_date):  # Three types of event: Complete
     return result
 
 
-def patientovview_cr_list(start_date, end_date):
+def patientovview_cr_list(start_date, end_date):  # Canceled Appointment Reasons graph
     result = [['Reason', 'Counts']]
     try:
         cancel_reason_list_query = Event.objects. \
@@ -104,23 +104,35 @@ def patientovview_cr_list(start_date, end_date):
     return result
 
 
+def patient_list(max_results=0, id_starts_with=''):  # Patient name list
+    name_list = []
+    if id_starts_with:
+        name_list_query = Event.objects.values('patient_id').filter(
+            patient_id__contains=id_starts_with).annotate(count=Count("patient_id"))[:max_results]
+        name_list = [name for name in name_list_query]
+    return name_list
+
+
 @csrf_exempt
 def patientovview(request):
     template = 'data/patientov.html'
-    if request.is_ajax() and request.method == 'POST':
+    if request.is_ajax() and request.method == 'POST':  # For Historical Appointment Summary graph
         if request.POST.get('type') == 'overview':
             start_date = request.POST.get('start_date')
             end_date = request.POST.get('end_date')
             array = patientovview_list(start_date, end_date)
             print(array)
             return JsonResponse(array, safe=False)
-        elif request.POST.get('type') == 'canceled_reason':
+        elif request.POST.get('type') == 'canceled_reason':  # For Canceled Appointment Reasons graph
             start_date = request.POST.get('start_date')
             end_date = request.POST.get('end_date')
             array = patientovview_cr_list(start_date, end_date)
             print(array)
             return JsonResponse(array, safe=False)
-    print("a\n\n")
+        elif request.POST.get('type') == 'patient_list':  # For Patient name list
+            array = patient_list(10, request.POST['pid'])
+            print(array)
+            return JsonResponse(array, safe=False)
     return render(request, template)
 
 
@@ -129,35 +141,57 @@ class PatientInfo(generic.ListView):  # Individual patient view
     template_name = 'data/patient_detail.html'
 
     def get_context_data(self, **kwargs):
+        # Initialize variables to prevent glitch values
         context = super().get_context_data(**kwargs)
-        context['appt_counts'] = {}
-        try:  # Individual canceled appointments count
+        context['patientInfo'] = {'sum': 0}
+        canceled_count = 0
+        completed_count = 0
+        noshow_count = 0
+
+        # This query could be improved by having a separate table consists doctor's info
+        # To get provider's name
+        name_query = self.model.objects. \
+            values('patient_id'). \
+            filter(patient_id=self.kwargs['patient_id']). \
+            annotate(pcount=Count('unique_id'))
+        context['patientInfo'].update({'patient_id': name_query[0]['patient_id']})
+
+        try:  # Individual appointments sum
             canceled_query = self.model.objects. \
                 values_list('canceled_flag'). \
                 filter(patient_id=self.kwargs['patient_id'],
                        canceled_flag__isnull=False)
-            context['appt_counts'].update({'canceled': canceled_query.count()})
+            canceled_count = canceled_query.count()
+            context['patientInfo'].update({'canceled': canceled_count})
         except ObjectDoesNotExist:
-            context['appt_counts'].update({'canceled': 0})
+            context['patientInfo'].update({'canceled': 0})
 
         try:  # Individual no show appointments count
-            canceled_query = self.model.objects. \
+            noshow_query = self.model.objects. \
                 values_list('noshow_flag'). \
                 filter(patient_id=self.kwargs['patient_id'],
                        noshow_flag__isnull=False)
-            context['appt_counts'].update({'noshow': canceled_query.count()})
+            noshow_count = noshow_query.count()
+            context['patientInfo'].update({'noshow': noshow_count})
         except ObjectDoesNotExist:
-            context['appt_counts'].update({'noshow': 0})
+            context['patientInfo'].update({'noshow': 0})
 
         try:  # Individual completed appointments count
-            canceled_query = self.model.objects. \
+            completed_query = self.model.objects. \
                 values_list('checkout_time'). \
                 filter(patient_id=self.kwargs['patient_id'],
-                       noshow_flag__isnull=True,
-                       canceled_flag__isnull=True)
-            context['appt_counts'].update({'completed': canceled_query.count()})
+                       checkin_time__isnull=False)
+            completed_count = completed_query.count()
+            context['patientInfo'].update({'completed': completed_count})
         except ObjectDoesNotExist:
-            context['appt_counts'].update({'completed': 0})
+            context['patientInfo'].update({'completed': 0})
+
+        total_count = canceled_count + noshow_count + completed_count
+        context['patientInfo'].update({'sum': total_count})
+        try:  # Individual complete rate count
+            context['patientInfo'].update({'complete_rate': round(completed_count * 100 / total_count, 2)})
+        except ZeroDivisionError:
+            context['patientInfo'].update({'complete_rate': 'No Record'})
 
         return context
 
@@ -167,14 +201,28 @@ class ProviderInfo(generic.ListView):  # Individual provider view
     template_name = 'data/provider_detail.html'
 
     def get_context_data(self, **kwargs):
+        individual_sum_error = False
+        individual_success_error = False
+
         context = super().get_context_data(**kwargs)
         context['providerInfo'] = {}
+
+        # This query could be improved by having a separate table consists doctor's info
+        # To get provider's name
+        name_query = self.model.objects. \
+            values('provider_name'). \
+            filter(provider_scheduled=self.kwargs['provider_scheduled']). \
+            annotate(pcount=Count('provider_name'))
+        context['providerInfo'].update({'provider_name': name_query[0]['provider_name']})
+
         try:  # Individual appointments sum
             total_query = self.model.objects. \
                 values_list('provider_scheduled'). \
-                filter(provider_scheduled=self.kwargs['provider_scheduled'])
+                filter(Q(checkin_time__isnull=False) | Q(canceled_flag__isnull=False) | Q(noshow_flag__isnull=False),
+                       provider_scheduled=self.kwargs['provider_scheduled'])
             context['providerInfo'].update({'total_count': total_query.count()})
         except ObjectDoesNotExist:
+            individual_sum_error = True
             context['providerInfo'].update({'total_count': 0})
 
         try:  # Individual successful appointments count
@@ -182,13 +230,19 @@ class ProviderInfo(generic.ListView):  # Individual provider view
                 values_list('provider_scheduled'). \
                 filter(provider_scheduled=self.kwargs['provider_scheduled'],
                        noshow_flag__isnull=True,
-                       canceled_flag__isnull=True)
+                       canceled_flag__isnull=True,
+                       checkin_time__isnull=False)
             context['providerInfo'].update({'completed_count': completed_query.count()})
         except ObjectDoesNotExist:
+            individual_success_error = True
             context['providerInfo'].update({'completed_count': 0})
 
         try:  # Calculate the successful appointment rate and return it
-            complete_rate = round((completed_query.count() * 100 / total_query.count()), 2)
+            if individual_sum_error is False and individual_success_error is False:
+                # return as percentage
+                complete_rate = round((completed_query.count() * 100 / total_query.count()), 2)
+            else:
+                complete_rate = 0
             context['providerInfo'].update({'completed_rate': complete_rate})
             context['providerInfo'].update({'data_error': False})
         except ZeroDivisionError:
@@ -197,14 +251,14 @@ class ProviderInfo(generic.ListView):  # Individual provider view
 
         return context
 
-    # template_name = 'display/this.html'
-    #
-    # def get(self, request):ve
-    #     try:a
-    #         this_query = Categories.objects.values("categoryname", "description").order_by('categoryid')
-    #     except Categories.DoesNotExist:
-    #         raise Http404('The object does not exist.')
-    #     return render(request, self.template_name, {'this_query': this_query})
+        # template_name = 'display/this.html'
+        #
+        # def get(self, request):ve
+        #     try:a
+        #         this_query = Categories.objects.values("categoryname", "description").order_by('categoryid')
+        #     except Categories.DoesNotExist:
+        #         raise Http404('The object does not exist.')
+        #     return render(request, self.template_name, {'this_query': this_query})
 
 # def get_data(request):
 #     try:

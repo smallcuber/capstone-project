@@ -1,11 +1,28 @@
 {% extends 'data/base.html' %}
 {% block title %}Patient Overview{% endblock %}
 {% block body %}
-    <form method="post" id="empname" data-validate-username-url="#">
-        <span for='empfname'>Search by patient ID </span>
-        <input id="empfname" onkeyup="showName(this.value)" value=""/>
-        <input type="submit" class="button" />
-    </form>
+    <div>
+        <div class="row">
+            <div class="col-lg-4 col-lg-offset-4">
+                <input type="search" id="pid" value="" class="form-control" placeholder="Search by provider names" onkeyup="showName(this.value)">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-10">
+                <table class="table" id="emp-table">
+                    <thead>
+                        <tr>
+                            <th>Patient Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+                <hr>
+            </div>
+        </div>
+    </div>
 
     <div class="align-center" id="patientov" style="height: 400px;"></div>
     <div class="align-center" id="patientov-canceled-reason" style="height: 400px;"></div>
@@ -20,6 +37,37 @@
 
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
+
+    var endpoint = {% url 'patients' %};
+    var out = '';
+
+    function showName(str) {
+        $.ajax({
+            method: "POST",
+            url: endpoint,
+            data: {
+                'type' : 'patient_list',
+                'pid': $("#pid").val()
+            },
+            dataType: "json",
+            success: function (json) {
+                $("#emp-table tbody > tr").remove();
+                $.each(json, function(idx, obj){
+                    var tr = $('<tr>');
+                    var td = $('<td>');
+                    td.append('<a href="./' + obj['patient_id'] + '">' + obj['patient_id'] + "</a>");
+                    tr.append(td);
+                    $('#emp-table tbody').append(tr);
+                });
+                console.log(json);
+            },
+            error: function (error_data) {
+                $('#emp-name-list').text({{ name_list.firstname }});
+                console.log("error");
+                console.log(error_data);
+            }
+        })
+    }
         $(document).ready(function(){
             var today = new Date();
             var year = today.getFullYear();
