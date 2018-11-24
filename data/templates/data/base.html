@@ -7,88 +7,71 @@
 		<title>{% block title %}Scheduling{% endblock %}</title>
 		{% load staticfiles %}
 		<link href='https://fonts.googleapis.com/css?family=Source+Sans+Pro:700, 600,500,400,300' rel='stylesheet' type='text/css'>
-		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
 		<link rel="stylesheet" href="http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
         <link rel="stylesheet" type="text/css" href="{% static 'data/main1.css' %}" />
+		<script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-beta.2/js/bootstrap.bundle.min.js"></script>
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
         <script type="text/javascript" href="{% static 'data/date.js' %}"></script>
-		<script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
 		<script src="https://code.highcharts.com/highcharts.js"></script>
 		<script src="https://code.highcharts.com/modules/data.js"></script>
 		<link rel="stylesheet" type="text/js" href="{% static 'data/main.js' %}" />
 	</head>
 	<body>
-        <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #35475e;">
-  <a class="navbar-brand" href="#">Navbar</a>
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
-  <div class="collapse navbar-collapse" id="navbarSupportedContent">
-    <ul class="navbar-nav mr-auto">
-      <li class="nav-item active">
-        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">Link</a>
-      </li>
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          Dropdown
-        </a>
-        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-          <a class="dropdown-item" href="#">Action</a>
-          <a class="dropdown-item" href="#">Another action</a>
-          <div class="dropdown-divider"></div>
-          <a class="dropdown-item" href="#">Something else here</a>
-        </div>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link disabled" href="#">Disabled</a>
-      </li>
-    </ul>
-    <form class="form-inline my-2 my-lg-0">
-      <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
-      <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
-    </form>
-  </div>
-</nav><!--
-		<div class="header">
-			<div class="logo">
-				<i class="fa fa-tachometer"></i>
-				<span>Brand</span>
-			</div>
-            <div class=""></div>
-			<a href="#" class="nav-trigger"><span></span></a>
-		</div>!-->
-		<div class="side-nav">
-			<div class="logo">
-				<i class="fa fa-tachometer"></i>
-				<span>Brand</span>
-			</div>
+
+<div class="side-nav">
+    <div class="logo" id="side-nav-logo">
+        {% if user.is_authenticated %}
+            <span>Hi, {{ user.get_username }}</span>
+        {% else %}
+            <i class="fa fa-frown-o"></i>
+            <span>No Logged in</span>
+        {% endif %}
+    </div>
 			<nav>
-				<ul id="navbar-ul">
-					<li id="navbar-li" class="">
-						<a href="{% url 'providers' %}">
-							<span><i class="fa fa-user"></i></span>
-							<span>Employees</span>
-						</a>
+				<ul id="">
+                     <li id="li-login-status" class="">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'logout' %}">
+                            <span><i class="fa fa-sign-out"></i></span>
+                            <span>Sign out</span>
+                        </a>
+                    {% else %}
+                        <a href="{% url 'login' %}">
+                            <span><i class="fa fa-sign-in"></i></span>
+                            <span>Sign in</span>
+                        </a>
+                    {% endif %}
 					</li>
-					<li id="navbar-li" class="">
+					<li id="" class="">
 						<a href="{% url 'schedule' %}">
-							<span><i class="fa fa-envelope"></i></span>
+							<span><i class="fa fa-calendar-check-o"></i></span>
 							<span>Scheduling</span>
 						</a>
                     </li>
-					<li id="navbar-li" class="">
+					<li id="" class="">
+						<a href="{% url 'providers' %}">
+							<span><i class="fa fa-drivers-license-o"></i></span>
+							<span>Employees</span>
+						</a>
+					</li>
+					<li id="" class="">
 						<a href="{% url 'patients' %}">
-							<span><i class="fa fa-bar-chart"></i></span>
+							<span><i class="fa fa-address-book-o"></i></span>
 							<span>Patients</span>
 						</a>
 					</li>
-					<li id="navbar-li" class="">
-						<a href="#">
-							<span><i class="fa fa-credit-card-alt"></i></span>
+					<li id="" class="">
+						<a href="{% url 'performance' %}">
+							<span><i class="fa fa-bar-chart"></i></span>
 							<span>Performance</span>
+						</a>
+					</li>
+                    <li id="" class="">
+						<a href="{% url 'modelupload' %}">
+							<span><i class="fa fa-upload"></i></span>
+							<span>Upload model</span>
 						</a>
 					</li>
 				</ul>
@@ -99,22 +82,6 @@
 				{% block body %}
 			    {% endblock %}
             </div>
-			<!--
-			<div class="main">
-				<div class="widget">
-					<div class="title">Attending Rate</div>
-					<div class="chart"></div>
-				</div>
-				<div class="widget">
-					<div class="title">Monthly Rate</div>
-					<div class="chart"></div>
-				</div>
-				<div class="widget">
-					<div class="title"></div>
-					<div class="chart"></div>
-				</div>
-			</div>
-			!-->
 		</div>
     <script type="text/javascript" src="{% static 'data/navbar.js' %}"></script>
 	</body>

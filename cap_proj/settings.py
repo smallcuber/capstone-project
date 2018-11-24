@@ -25,7 +25,7 @@ SECRET_KEY = 'p5do#uhp-nc+ia!uj0$o_@kt6fmyc2h+3b=pwvx_k2dz!f^a*y'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['192.168.1.6', '127.0.0.1']
 
 
 # Application definition
@@ -124,3 +124,6 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = 'static/'
+
+MEDIA_URL = '/data/nn_model/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'data/nn_model') # 'data/nn_model/' # os.path.join(BASE_DIR, 'media')

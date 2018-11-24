@@ -1,0 +1,78 @@
+{% extends 'data/base.html' %}
+{% block title %}Sign in{% endblock %}
+{% block body %}
+
+    <div class="container">
+        <div class="form" id="theForm">
+            <div class="form-group row">
+                <label for="inputUserName" class="col-sm-2 col-form-label">Email</label>
+                <div class="col-sm-10">
+                    <input type="email" class="form-control" id="inputUserName" placeholder="User name">
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="inputPassword" class="col-sm-2 col-form-label">Password</label>
+                <div class="col-sm-10">
+                    <input type="password" class="form-control" id="inputPassword" placeholder="Password">
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="offset-sm-2 col-sm-10">
+                    <button type="submit" class="btn btn-primary" onclick="submit()">Sign in</button>
+                </div>
+            </div>
+        </div>
+        <div class="form-group row" id="warning" style="display: none;">
+            <div class="alert alert-danger" id="warningMessage"></div>
+        </div>
+        <div class="form-group row" id="success" style="display: none;">
+            <div class="alert alert-success" id="successMessage"></div>
+        </div>
+    </div>
+    <script>
+        var endpoint = {% url 'login' %};
+        var warningDiv = document.getElementById("warning");
+        var warningMessage = document.getElementById("warningMessage");
+        var successDiv = document.getElementById("success");
+        var successMessage = document.getElementById("successMessage");
+
+        function submit() {
+            {#var csrftoken = $.cookie('csrftoken');#}
+            $.ajax({
+                method: "POST",
+                url: endpoint,
+                data: {
+                    'username': document.getElementById("inputUserName").value,
+                    'password': document.getElementById("inputPassword").value,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                dataType: "json",
+                success: function (message) {
+                    console.log('success');
+                    if (message['verified'] === true) {
+                        warningDiv.style.display = "none";
+                        successDiv.style.display = "block";
+                        successMessage.innerHTML = message['Message'];
+                        document.getElementById("theForm").style.display = "none";
+                        document.getElementById("side-nav-logo").innerHTML = "<span>Hi, " + message['username'] + "</span>";
+                        document.getElementById('li-login-status').innerHTML =
+                            "<a href=\"{% url 'logout' %}\">\n" +
+                            "                            <span><i class=\"fa fa-sign-out\"></i></span>\n" +
+                            "                            <span>Sign out</span>\n" +
+                            "                        </a>";
+                    } else {
+                        warningDiv.style.display = "block";
+                        successDiv.style.display = "none";
+                        warningMessage.innerHTML = message['Message'];
+                    }
+                },
+                error: function (error) {
+                    console.log('error');
+                    warningDiv.style.display = "block";
+                    successDiv.style.display = "none";
+                    warningMessage.innerHTML = error[0];
+                }
+            });
+        }
+    </script>
+{% endblock %}

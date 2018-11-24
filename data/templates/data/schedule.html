@@ -1,64 +1,392 @@
 {% extends 'data/base.html' %}
 {% block title %}Scheduling{% endblock %}
 {% block body %}
-    <form method="post" id="empname" data-validate-username-url="#">
-        <span>Full Name</span><input id="empfname" onkeyup="showName(this.value)" value=""/>
-    </form>
+    {% load staticfiles %}
+<link rel="stylesheet" type="text/css" href="{% static 'data/schedule.css' %}">
+<form class="form" method="post" id="empname" data-validate-username-url="#">
+    <div  class="form-group">
+    <div>
+        <div class="form-group float-left">
+           <label for="dropdownPatientID">Patient ID</label>
+            <div class="dropdown">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownPatientID"
+                        value=""
+                        data-toggle="dropdown"
+                        aria-haspopup="true"
+                        aria-expanded="false">
+                    Enter Patient ID
+                </button>
+                <div id="menuPatientID" class="dropdown-menu" aria-labelledby="dropdownPatientID">
+                        <input type="search" class="form-control" id="patientID" placeholder="Search Patient ID" autofocus="autofocus" onkeyup="filter(this.value)">
+                    <div id="menuItemsPatientID"></div>
+                    <div id="emptyPatientID" class="dropdown-header">No ID found</div>
+                </div>
+            </div>
+        </div>
 
-    <p id="test">Employee names</p>
+        <div class="form-group float-left">
+           <label for="dropdownProviderNames">Provider Name</label>
+            <div class="dropdown">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownProviderNames"
+                        value=""
+                        data-toggle="dropdown"
+                        aria-haspopup="true"
+                        aria-expanded="false">
+                    Select Names
+                </button>
+                <div id="menu" class="dropdown-menu" aria-labelledby="dropdownProviderNames">
+                        <input type="search" class="form-control" id="providerNames" placeholder="Search provider names" autofocus="autofocus" onkeyup="filter(this.value)">
+                    <div id="menuItems"></div>
+                    <div id="empty" class="dropdown-header">No provider found</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group float-left">
+            <label for="dropdownProcedureNames">Provider Name</label>
+            <div class="dropdown">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownProcedureNames"
+                        value=""
+                        data-toggle="dropdown"
+                        aria-haspopup="true"
+                        aria-expanded="false">
+                    Select Names
+                </button>
+                <div id="menuProcedure" class="dropdown-menu" aria-labelledby="dropdownProcedureNames">
+                        <input type="search" class="form-control" id="procedureNames" placeholder="Search procedure names" autofocus="autofocus" onkeyup="filter(this.value)">
+                    <div id="menuItemsProcedure"></div>
+                    <div id="emptyProcedure" class="dropdown-header">No procedure found</div>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="inputAppointmentDuration">Procedure Duration</label>
+            <input type="number" class="form-control" id="inputAppointmentDuration" placeholder="Enter Appointment Duration" step="5" value="30" style="width: 100px"/>
+        </div>
+    </div>
+    <div>
+        <div class="form-group float-left">
+            <label for="schedule-start-date">Start Date</label><input id="schedule-start-date" class="form-control" type="date" value="2017-01-01" style="width: 170px"/>
+        </div>
+        <div class="form-group">
+            <label for="schedule-start-time">Start Time</label><input id="schedule-start-time" class="form-control" type="time" value="10:10" style="width: 150px"/>
+        </div>
+        <div class="form-group">
+            <label for="dropdownProcedureNames">Prediction  (days)</label>
+            <div class="form-group dropdown show">
+                <button class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownLength" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" value="">
+                Prediction Length
+                </button>
+
+                <div id="menuLength" class="dropdown-menu" aria-labelledby="dropdownLength">
+                    <input type="button" class="dropdown-item" value="3" />
+                    <input type="button" class="dropdown-item" value="7" />
+                    <input type="button" class="dropdown-item" value="15" />
+                    <input type="button" class="dropdown-item" value="30" />
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <button id="submitFeatureId" type="button" class="btn btn-primary" onclick="submitFeature()">Submit</button>
+    </div>
+    </div>
+</form>
+
     <div id="timeline"></div>
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-<script type="text/javascript">
-  google.charts.load("current", {packages:["timeline"]});
-  google.charts.setOnLoadCallback(drawChart);
-  function drawChart() {
 
-    var container = document.getElementById('timeline');
-    var chart = new google.visualization.Timeline(container);
-    var dataTable = new google.visualization.DataTable();
-    dataTable.addColumn({ type: 'string', id: 'Room' });
-    dataTable.addColumn({ type: 'string', id: 'Name' });
-    dataTable.addColumn({ type: 'date', id: 'Start' });
-    dataTable.addColumn({ type: 'date', id: 'End' });
-    var endpoint = {% url 'schedule' %};
-    console.log("1");
-    $.ajax({
-            method: "POST",
-            url: endpoint,
-            data: {
-                'docname': 'doc'
-            },
-            dataType: "json",
-            success: function (arrays) {
-                var array2d = arrays;
-                console.log(array2d);
-                for (var i = 0; i < array2d.length; i ++){
-                    dataTable.addRow(
-                        [array2d[i][0], array2d[i][1], new Date(array2d[i][2]), addMin(array2d[i][2], array2d[i][3])]
-                    );
-                    console.log(new Date(array2d[i][2]));
-                    console.log(array2d[i][3]);
-                    console.log(new Date(addMin(array2d[i][2], array2d[i][3])));
-                    console.log("2");
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        var endpoint = {% url 'schedule' %};
+        google.charts.load("current", {packages: ["timeline"]});
+        var providerNamesArray = [];
+        var procedureNamesArray = [];
+        var searchProviderNames = document.getElementById('providerNames');
+        var dropDownItems = document.getElementById('menuItems').children;
+        var dropDownItemsProcedure = document.getElementById('menuItemsProcedure').children;
+        var dropDownItemsPatientID = document.getElementById('menuItemsPatientID').children;
+
+        $.ajax({ //Retrive provider and procedure information from Django server
+                method: "POST",
+                url: endpoint,
+                data: {'type': 'labels'},
+                dataType: "json",
+                success: function (array1d) {
+                    providerNamesArray = array1d[0]; // 0 is provider names
+                    procedureNamesArray = array1d[1]; // 1 is procedure names
+                    patientIDArray = array1d[2]; // 2 is patient ids
+                    console.log('names');
+                    console.log(providerNamesArray);
+                    buildDropDown(providerNamesArray, '#menuItems', '#empty');
+                    buildDropDown(procedureNamesArray, '#menuItemsProcedure', '#emptyProcedure');
+                    buildDropDown(patientIDArray, '#menuItemsPatientID', '#emptyPatientID');
+                },
+                error: function (procedureName_error) {
+                    console.log("error labels not loaded");
+                    console.log(procedureName_error);
                 }
-                console.log("3");
-                console.log(dataTable);
-                var height = array2d.length * 41 + 30; //Algorithm for calculating chart height
-                var options = {
-                  timeline: { colorByRowLabel: true },
-                  'height': height
-                };
-                console.log("4");
-                chart.draw(dataTable, options);
-            },
-            error: function (error_data) {
-                console.log("error");
-                console.log(error_data);
+            });
+
+        $(document).ready(function () {
+            var today = new Date();
+            var year = today.getFullYear();
+            var month = today.getMonth() + 1; //Because Month starts at 0
+            var day = today.getDate();
+            if (day < 10) {
+                day = '0' + day;
             }
-    });
-  }
-  function addMin(date, min){
-      return new Date(new Date(date).getTime() + parseInt(min) * 60000);
-  }
-</script>
+            if (month < 10) {
+                month = '0' + month;
+            }
+            var hour = today.getHours();
+            if (hour < 10) {
+                hour = '0' + hour;
+            }else if(hour == 0) { // Example: convert 1 a.m. to 01 a.m.
+                hour = '00';
+            }
+            var minute = today.getMinutes();
+            if (minute < 10) { // Example: convert 15:5 to 15:05
+                minute = '0' + minute;
+            }
+            var today = year + '-' + month + '-' + day;
+            var todayTime = hour + ':' + minute;
+            console.log(today);
+            document.getElementById("schedule-start-date").defaultValue = today;
+            document.getElementById("schedule-start-time").defaultValue = todayTime;
+
+        });
+
+        //This function pass the Machine Learning Feature value from the form to the Django server
+        function submitFeature(){
+            var valid = true;
+            var patientID = "";
+            var providerName = "";
+            var procedureName = "";
+            var procedureDuration = 0;
+            var appDate = "1970-1-1";
+            var appTime = "00:00";
+            var predictionLength = 0;
+
+            if (document.getElementById("dropdownPatientID").value !== ""){
+                patientID = document.getElementById("dropdownPatientID").value;
+            }else{
+                valid = false;
+            }
+
+            if (document.getElementById("dropdownProviderNames").value !== ""){
+                providerName = document.getElementById("dropdownProviderNames").value;
+            }else{
+                valid = false;
+            }
+
+            if (document.getElementById("dropdownProcedureNames").value !== ""){
+                procedureName = document.getElementById("dropdownProcedureNames").value;
+            }else{
+                valid = false;
+            }
+
+            if (document.getElementById("inputAppointmentDuration").value !== "0" && document.getElementById("inputAppointmentDuration").value % 5 === 0){
+                procedureDuration = document.getElementById("inputAppointmentDuration").value;
+            }else{
+                valid = false;
+            }
+
+            if (document.getElementById("schedule-start-date").value !== null){
+                appDate = document.getElementById("schedule-start-date").value;
+            }else{
+                valid = false;
+            }
+
+            if (document.getElementById("schedule-start-time").value !== null){
+                appTime = document.getElementById("schedule-start-time").value;
+            }else{
+                valid = false;
+            }
+
+            if (document.getElementById("dropdownLength").value !== ""){
+                predictionLength = document.getElementById("dropdownLength").value;
+            }else{
+                valid = false;
+            }
+
+            if (valid === true) {
+{#                window.alert("Valid");#}
+{#                window.alert(providerName);#}
+{#                window.alert(procedureName);#}
+{#                window.alert(procedureDuration);#}
+{#                window.alert(appDate);#}
+{#                window.alert(appTime);#}
+{#                window.alert(patientID);#}
+{#                window.alert(predictionLength);#}
+
+                $.ajax({
+                    method: "POST",
+                    url: endpoint,
+                    data: {
+                        'type': 'prediction',
+                        'providerName': providerName,
+                        'procedureName': procedureName,
+                        'procedureDuration': procedureDuration,
+                        'appDate': appDate,
+                        'appTime': appTime,
+                        'patientID': patientID,
+                        'predictionLength': predictionLength
+                    },
+                    dataType: "json",
+                    success: function (result){
+                        // TODO: construct google chart based on the returned result
+                        console.log(result[0]);
+                        var height = result.length;
+                        google.charts.setOnLoadCallback(drawChart(result, height));
+                        console.log(result);
+                    },
+                    error: function (errorMessage) {
+                        console.log(errorMessage);
+                    }
+                });
+            }else{
+                window.alert("Invalid Data");
+            }
+        }
+
+        //This function inserts the options from Ajax to drop down
+        function buildDropDown(values, menuItemsId, emptyId) {
+            var contents = [];
+            console.log('buildDropDown');
+            console.log(values);
+            for (var i = 0; i < values.length; i++) {
+                console.log(values[i]);
+                contents.push('<input type="button" class="dropdown-item" value="' + values[i] + '"/>')
+            }
+            $(menuItemsId).append(contents.join(""));
+            $(emptyId).hide(); // Hide the row if no items are found
+        }
+
+        //Capture the event when user types into the provider names search box
+        document.getElementById("providerNames").addEventListener("input", function (){
+           filter(dropDownItems, document.getElementById("providerNames").value.toLowerCase(), '#empty')
+        });
+        //Capture the event when user types into the procedure names search box
+        document.getElementById("procedureNames").addEventListener("input", function (){
+           filter(dropDownItemsProcedure, document.getElementById("procedureNames").value.toLowerCase(), '#emptyProcedure')
+        });
+        //Capture the event when user types into the patient ids search box
+        document.getElementById("patientID").addEventListener("input", function (){
+           filter(dropDownItemsPatientID, document.getElementById("patientID").value.toLowerCase(), '#emptyPatientID')
+        });
+        //For every word entered by the user, check if the symbol starts with that word
+        //If it does show the symbol, else hide it
+        function filter(dropDownItems, word, emptyId) {
+            console.log('filtering...');
+            var length = dropDownItems.length;
+            var hidden = 0;
+            for (var i = 0; i < length; i ++) {
+                console.log("dropDownItems[i]");
+                if (dropDownItems[i].value.toLowerCase().includes(word)){
+                    $(dropDownItems[i]).show();
+                }
+                else {
+                    $(dropDownItems[i]).hide();
+                    hidden++;
+                }
+            }
+            //if all items are hidden, show the empty view
+            if (hidden == length) {
+                $(emptyId).show();
+            }else{
+                $(emptyId).hide();
+            }
+        }
+
+        //If the user clicks on any item, set the title of the button as the text of the item
+        $('#menuItems').on('click', '.dropdown-item', function (){
+            console.log('menuitem clicked...');
+            document.getElementById("dropdownProviderNames").value = $(this)[0].value;
+            $('#dropdownProviderNames').text($(this)[0].value);
+            $('#dropdownProviderNames').dropdown('toggle');
+        });
+
+        $('#menuItemsProcedure').on('click', '.dropdown-item', function (){
+            console.log('menuitem clicked...');
+            document.getElementById("dropdownProcedureNames").value = $(this)[0].value;
+            $('#dropdownProcedureNames').text($(this)[0].value);
+            $('#dropdownProcedureNames').dropdown('toggle');
+        });
+
+        $('#menuPatientID').on('click', '.dropdown-item', function (){
+            console.log('menuitem clicked...');
+            document.getElementById("dropdownPatientID").value = $(this)[0].value;
+            $('#dropdownPatientID').text($(this)[0].value);
+            $('#dropdownPatientID').dropdown('toggle');
+        });
+        $('#menuLength').on('click', '.dropdown-item', function (){
+            document.getElementById("dropdownLength").value = $(this)[0].value;
+            $('#dropdownLength').text($(this)[0].value);
+            $('#dropdownLength').dropdown('toggle');
+        });
+
+        function drawChart(result, inHeight) {
+            var container = document.getElementById('timeline');
+            var chart = new google.visualization.Timeline(container);
+            var dataTable = new google.visualization.DataTable();
+            dataTable.addColumn({type: 'string', id: 'Date'});
+            dataTable.addColumn({type: 'string', id: 'Result'});
+            dataTable.addColumn({type: 'date', id: 'Start'});
+            dataTable.addColumn({type: 'date', id: 'End'});
+            for (var i = 0; i < result.length; i++){
+                // TODO: test the graph
+                dataTable.addRow([result[i][0], result[i][1].toString(), onlyTime(result[i][2]), onlyTime(result[i][3])]);
+            }
+            var options = {
+                timeline: {colorByRowLabel: false},
+                'height': inHeight
+            };
+            chart.draw(dataTable, options);
+{#            dataTable.addColumn({type: 'string', id: 'Room'});#}
+{#            dataTable.addColumn({type: 'string', id: 'Name'});#}
+{#            dataTable.addColumn({type: 'date', id: 'Start'});#}
+{#            dataTable.addColumn({type: 'date', id: 'End'});#}
+{#            console.log("1");#}
+{#            $.ajax({#}
+{#                method: "POST",#}
+{#                url: endpoint,#}
+{#                data: {#}
+{#                    'type': 'providerName'#}
+{#                },#}
+{#                dataType: "json",#}
+{#                success: function (arrays) {#}
+{#                    var array2d = arrays;#}
+{#                    console.log(array2d);#}
+{#                    for (var i = 0; i < array2d.length; i++) {#}
+{#                        dataTable.addRow(#}
+{#                            [array2d[i][0], array2d[i][1], new Date(array2d[i][2]), addMin(array2d[i][2], array2d[i][3])]#}
+{#                        );#}
+{#                    }#}
+{#                    console.log("3");#}
+{#                    console.log(dataTable);#}
+{#                    var height = array2d.length * 41 + 30; //Algorithm for calculating chart height#}
+{#                    var options = {#}
+{#                        timeline: {colorByRowLabel: true},#}
+{#                        'height': height#}
+{#                    };#}
+{#                    console.log("4");#}
+{#                    chart.draw(dataTable, options);#}
+{#                },#}
+{#                error: function (error_data) {#}
+{#                    console.log("error");#}
+{#                    console.log(error_data);#}
+{#                }#}
+{#            });#}
+            }
+
+        function onlyTime(datetime){
+            date = new Date(datetime);
+            outdate = new Date(0, 0, 0, date.getHours(), date.getMinutes(), date.getSeconds());
+            return outdate;
+        }
+
+        function addMin(date, min) {
+            return new Date(new Date(date).getTime() + parseInt(min) * 60000);
+        }
+    </script>
 {% endblock %}

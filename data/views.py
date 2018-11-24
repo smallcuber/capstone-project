@@ -1,16 +1,20 @@
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
-from django.views import generic, View
+from django.views import generic
+from django.urls import reverse
 from django.shortcuts import get_object_or_404
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from .models import Event
-from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
 from django.db.models import Value, Count, Q
 from django.views.decorators.csrf import csrf_exempt
-import json
+from django.contrib.auth import authenticate, login, logout
+from django.core.files.storage import FileSystemStorage
+from .nn_prediction import NeuralNetEssentials
 
-User = get_user_model()
 
+# User = get_user_model()
+login_redirect_link = '/userlogin/'
 
 def providers_list(max_results=0, name_starts_with=''):
     name_list = []
@@ -21,6 +25,7 @@ def providers_list(max_results=0, name_starts_with=''):
     return name_list
 
 
+@login_required(login_url=login_redirect_link)
 @csrf_exempt
 def providers(request):
     template = 'data/providers.html'
@@ -42,15 +47,64 @@ def scheduleview_list(max_results=0):
     return schedule_list
 
 
+@login_required(login_url=login_redirect_link)
 @csrf_exempt
 def scheduleview(request):  #
     template = 'data/schedule.html'
+
     array = []
     # array = [['Magnolia Room', 'Beginning JavaScript', '2017-12-05 13:22:14.000', '12/5/2017 13:57'],['Magnolia Room', 'Beginning JavaScript', '2017-12-05 15:22:14.000', '12/5/2017 15:57']]
     if request.is_ajax() and request.method == 'POST':
-        array = scheduleview_list(30)
-        return JsonResponse(array, safe=False)
-    return render(request, template, {'array': json.dumps(array)})
+        if request.POST.get('type') == 'providerName':
+            array = scheduleview_list(30)
+            return JsonResponse(array, safe=False)
+        elif request.POST.get("type") == 'labels':
+            # Query get list of provider names
+            providers_list_query = Event.objects.values('provider_name'). \
+                annotate(provider_count=Count("provider_name"))
+            providers_list = [provider['provider_name'] for provider in providers_list_query]
+            # Query get list of procedure names
+            procedureName_list_query = Event.objects.values('procedure_name'). \
+                annotate(procedure_count=Count('procedure_name'))
+            procedureName_list = [procedureNames['procedure_name'] for procedureNames in procedureName_list_query]
+            # Query get list of patient ids
+            patient_id_list_query = Event.objects.values('patient_id'). \
+                annotate(patient_id_count=Count('patient_id'))
+            patient_id_list = [patient_id['patient_id'] for patient_id in patient_id_list_query]
+            labels = [providers_list, procedureName_list, patient_id_list]
+            return JsonResponse(labels, safe=False)
+        elif request.POST.get("type") == 'prediction':
+            provider_name = request.POST.get("providerName")
+            print(provider_name)
+            procedure_name = request.POST.get("procedureName")
+            print(procedure_name)
+            procedure_duration = request.POST.get("procedureDuration")
+            print(procedure_duration)
+            app_date = request.POST.get("appDate")
+            print(app_date)
+            app_time = request.POST.get("appTime")
+            print(app_time)
+            patient_id = request.POST.get("patientID")
+            print(patient_id)
+            prediction_length = request.POST.get("predictionLength")
+            print(prediction_length)
+            
+            featureData = NeuralNetEssentials()
+            featureData.convertFeaturesApplication(
+                combination=[0, 1, 2, 3, 4, 5, 6, 8, 9, 10],
+                date=app_date,
+                patient_id=patient_id,
+                procedure_name=procedure_name,
+                provider_name=provider_name,
+                duration=int(procedure_duration),
+                prediction_length=int(prediction_length)
+            )
+            result = featureData.predictResults(
+                modelPath="data/nn_model/model-2018-11-16 07810894340351556 and 10.sav"
+            )
+            return JsonResponse(result, safe=False)
+
+    return render(request, template)
 
 
 def patientovview_list(start_date, ende_date):  # Three types of event: Completed, No Show, Canceled
@@ -113,6 +167,7 @@ def patient_list(max_results=0, id_starts_with=''):  # Patient name list
     return name_list
 
 
+@login_required(login_url=login_redirect_link)
 @csrf_exempt
 def patientovview(request):
     template = 'data/patientov.html'
@@ -192,7 +247,6 @@ class PatientInfo(generic.ListView):  # Individual patient view
             context['patientInfo'].update({'complete_rate': round(completed_count * 100 / total_count, 2)})
         except ZeroDivisionError:
             context['patientInfo'].update({'complete_rate': 'No Record'})
-
         return context
 
 
@@ -250,6 +304,79 @@ class ProviderInfo(generic.ListView):  # Individual provider view
             context['providerInfo'].update({'data_error': True})
 
         return context
+
+@login_required(login_url=login_redirect_link)
+@csrf_exempt
+def performanceview(request):
+    template = 'data/performance.html'
+    if request.is_ajax() and request.method == 'POST':  # For Historical Appointment Summary graph
+        if request.POST.get('type') == 'overview':
+            start_date = request.POST.get('start_date')
+            end_date = request.POST.get('end_date')
+            array = patientovview_list(start_date, end_date)
+            print(array)
+            return JsonResponse(array, safe=False)
+        elif request.POST.get('type') == 'canceled_reason':  # For Canceled Appointment Reasons graph
+            start_date = request.POST.get('start_date')
+            end_date = request.POST.get('end_date')
+            array = patientovview_cr_list(start_date, end_date)
+            print(array)
+            return JsonResponse(array, safe=False)
+    return render(request, template)
+
+
+def userLogin(request):
+    context = {}
+    template = 'data/login.html'
+    if request.method == "POST" and request.is_ajax():
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password)
+        print('message')
+        print(username)
+        print(password)
+        if user:
+            login(request, user)
+            context['Message'] = "You have successfully logged in."
+            context['verified'] = True
+            context['username'] = username
+            return JsonResponse(context)
+        else:
+            context['Message'] = "Wrong user name or password, please try again."
+            context['verified'] = False
+            return JsonResponse(context)
+    else:
+        return render(request, template)
+
+
+@login_required(login_url=login_redirect_link)
+@csrf_exempt
+def userLogout(request):
+    template = 'data/logout.html'
+    if request.method == "POST":
+        logout(request)
+        return redirect('login')
+    else:
+        return render(request, template)
+
+
+@login_required(login_url=login_redirect_link)
+@csrf_exempt
+def uploadModel(request):
+    template = 'data/upload_model.html'
+    context = {}
+    if request.method == "POST" and request.FILES['inputFileName']:
+        model = request.FILES['inputFileName']
+        fs = FileSystemStorage()
+        file_name = fs.save(model.name, model)
+        print("Model name %s" % (model.name))
+        print("Model size: %s" % (model.size))
+        uploaded_file_url = fs.url(file_name)
+        context['uploaded_file_url'] = uploaded_file_url
+        return render(request, template, context)
+    return render(request, template) #TODO: make sure the .sav file appears in the data/nn_model folder
+
+
 
         # template_name = 'display/this.html'
         #
