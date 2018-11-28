@@ -17,14 +17,49 @@
                 </div>
             </div>
         </form>
-        <div class="form-group row" id="warning" style="display: none;">
-            <div class="alert alert-danger" id="warningMessage"></div>
-        </div>
         {% if uploaded_file_url %}
-        <div class="form-group row" id="success" style="display: none;">
+        <div class="form-group row" id="success">
             <div class="alert alert-success" id="successMessage">File uploaded at: {{ uploaded_file_url }}</div>
         </div>
+        {% elif wrong_file_extension is True %}
+            <div class="form-group row" id="warning">
+                <div class="alert alert-danger" id="warningMessage">Wrong File type</div>
+            </div>
+        {% else %}
         {% endif %}
+    <br>
+    <hr/>
+    <br>
+        {% if changed_file_name %}
+        <div class="form-group row" id="success">
+            <div class="alert alert-success" id="successMessage">Model changed to: {{ changed_file_name }}</div>
+        </div>
+        {% endif %}
+        <form method="POST" class="form" id="selection-form" enctype="multipart/form-data">
+            <div class="form-group row">
+                <div class="offset-sm-2 col-sm-10">
+                    <button type="submit" class="btn btn-primary" {#onclick="submit()"#}>Select model</button>
+                </div>
+            </div>
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <th scope="col">Select model</th>
+                    <th scope="col">Model Name</th>
+                    <th scope="col">Upload Date</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for row in table_data %}
+                <tr>
+                    <th scope="row"><input type="radio" name="selectFileName" value="{{ row.1 }}" {% if row.0 is 1 %} checked {% endif %}></th>
+                    <td>{{ row.1 }}</td>
+                    <td>{{ row.2 }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </form>
     </div>
     <script>
         var endpoint = {% url 'login' %};

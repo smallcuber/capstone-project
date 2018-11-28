@@ -4,9 +4,9 @@
     {% load staticfiles %}
 <link rel="stylesheet" type="text/css" href="{% static 'data/schedule.css' %}">
 <form class="form" method="post" id="empname" data-validate-username-url="#">
-    <div  class="form-group">
-    <div>
-        <div class="form-group float-left">
+    <div  class="row">
+
+        <div class="col-md-4">
            <label for="dropdownPatientID">Patient ID</label>
             <div class="dropdown">
                 <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownPatientID"
@@ -24,7 +24,7 @@
             </div>
         </div>
 
-        <div class="form-group float-left">
+        <div class="col-md-4">
            <label for="dropdownProviderNames">Provider Name</label>
             <div class="dropdown">
                 <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownProviderNames"
@@ -42,8 +42,8 @@
             </div>
         </div>
 
-        <div class="form-group float-left">
-            <label for="dropdownProcedureNames">Provider Name</label>
+        <div class="col-md-4">
+            <label for="dropdownProcedureNames">Procedure Name</label>
             <div class="dropdown">
                 <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownProcedureNames"
                         value=""
@@ -59,18 +59,28 @@
                 </div>
             </div>
         </div>
-        <div class="form-group">
+
+        <div class="col-md-4">
             <label for="inputAppointmentDuration">Procedure Duration</label>
             <input type="number" class="form-control" id="inputAppointmentDuration" placeholder="Enter Appointment Duration" step="5" value="30" style="width: 100px"/>
         </div>
-    </div>
-    <div>
+
+
+
+
+      <div class="col-md-4">
         <div class="form-group float-left">
             <label for="schedule-start-date">Start Date</label><input id="schedule-start-date" class="form-control" type="date" value="2017-01-01" style="width: 170px"/>
         </div>
+        </div>
+        <div class="col-md-4">
         <div class="form-group">
             <label for="schedule-start-time">Start Time</label><input id="schedule-start-time" class="form-control" type="time" value="10:10" style="width: 150px"/>
         </div>
+        </div>
+        </div>
+
+        <div class="col-md-4">
         <div class="form-group">
             <label for="dropdownProcedureNames">Prediction  (days)</label>
             <div class="form-group dropdown show">
@@ -84,13 +94,15 @@
                     <input type="button" class="dropdown-item" value="15" />
                     <input type="button" class="dropdown-item" value="30" />
                 </div>
+                </div>
             </div>
         </div>
-    </div>
+
+    <br/><br/><br/>
     <div class="form-group">
         <button id="submitFeatureId" type="button" class="btn btn-primary" onclick="submitFeature()">Submit</button>
     </div>
-    </div>
+
 </form>
 
     <div id="timeline"></div>
@@ -330,16 +342,35 @@
             var chart = new google.visualization.Timeline(container);
             var dataTable = new google.visualization.DataTable();
             dataTable.addColumn({type: 'string', id: 'Date'});
-            dataTable.addColumn({type: 'string', id: 'Result'});
+            dataTable.addColumn({type: 'string', id: 'Category'});
             dataTable.addColumn({type: 'date', id: 'Start'});
             dataTable.addColumn({type: 'date', id: 'End'});
             for (var i = 0; i < result.length; i++){
                 // TODO: test the graph
-                dataTable.addRow([result[i][0], result[i][1].toString(), onlyTime(result[i][2]), onlyTime(result[i][3])]);
+                bad_or_comp_string = 'SUCCESS';
+                if( result[i][1] === 1){
+                    var bad_or_comp_string = 'SUCCESS';
+                 }else if( result[i][1] === 0){
+                    var bad_or_comp_string = 'FAIL';
+                 }
+
+
+                dataTable.addRow([result[i][0], {# result[i][1].toString() #} bad_or_comp_string, onlyTime(result[i][2]), onlyTime(result[i][3])]);
             }
+
+            var colors = [];
+            var colorMap = {
+                FAIL: '#CB4335',
+                SUCCESS: '#3498DB'
+             };
+            for (var o = 0; o < dataTable.getNumberOfRows(); o++) {
+                colors.push(colorMap[dataTable.getValue(o, 1)]);
+             }
+
             var options = {
                 timeline: {colorByRowLabel: false},
-                'height': inHeight
+                'height': inHeight,
+                colors: colors
             };
             chart.draw(dataTable, options);
 {#            dataTable.addColumn({type: 'string', id: 'Room'});#}

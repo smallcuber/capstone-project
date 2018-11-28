@@ -5,12 +5,15 @@ from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render, redirect
 from .models import Event
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Value, Count, Q
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login, logout
 from django.core.files.storage import FileSystemStorage
 from .nn_prediction import NeuralNetEssentials
+from datetime import datetime
+import os
+import configparser
 
 
 # User = get_user_model()
@@ -88,7 +91,11 @@ def scheduleview(request):  #
             print(patient_id)
             prediction_length = request.POST.get("predictionLength")
             print(prediction_length)
-            
+
+            config = configparser.ConfigParser()
+            config.read('model.ini')
+            selected_model_path = config['Path']['ModelPath'] #TODO: read config file and load it to model path
+
             featureData = NeuralNetEssentials()
             featureData.convertFeaturesApplication(
                 combination=[0, 1, 2, 3, 4, 5, 6, 8, 9, 10],
@@ -100,7 +107,8 @@ def scheduleview(request):  #
                 prediction_length=int(prediction_length)
             )
             result = featureData.predictResults(
-                modelPath="data/nn_model/model-2018-11-16 07810894340351556 and 10.sav"
+                # "data/nn_model/model-2018-11-16 07810894340351556 and 10.sav"
+                modelPath= "data/nn_model/model-2018-11-16 07810894340351556 and 10.sav" # selected_model_path
             )
             return JsonResponse(result, safe=False)
 
@@ -247,6 +255,17 @@ class PatientInfo(generic.ListView):  # Individual patient view
             context['patientInfo'].update({'complete_rate': round(completed_count * 100 / total_count, 2)})
         except ZeroDivisionError:
             context['patientInfo'].update({'complete_rate': 'No Record'})
+
+        try:  # Individual no show rate count
+            context['patientInfo'].update({'no_show_rate': round(noshow_count * 100 / total_count, 2)})
+        except ZeroDivisionError:
+            context['patientInfo'].update({'no_show_rate': 'No Record'})
+
+        try:  # Individual canceled rate count
+            context['patientInfo'].update({'canceled_rate': round(canceled_count * 100 / total_count, 2)})
+        except ZeroDivisionError:
+            context['patientInfo'].update({'canceled_rate': 'No Record'})
+
         return context
 
 
@@ -325,6 +344,7 @@ def performanceview(request):
     return render(request, template)
 
 
+# this function is for user login page
 def userLogin(request):
     context = {}
     template = 'data/login.html'
@@ -360,21 +380,76 @@ def userLogout(request):
         return render(request, template)
 
 
+# This function is for upload model page
+@permission_required('contenttypes.content_type.can_delete_content_type',
+                     login_url=login_redirect_link)
 @login_required(login_url=login_redirect_link)
 @csrf_exempt
 def uploadModel(request):
     template = 'data/upload_model.html'
     context = {}
-    if request.method == "POST" and request.FILES['inputFileName']:
-        model = request.FILES['inputFileName']
-        fs = FileSystemStorage()
-        file_name = fs.save(model.name, model)
-        print("Model name %s" % (model.name))
-        print("Model size: %s" % (model.size))
-        uploaded_file_url = fs.url(file_name)
-        context['uploaded_file_url'] = uploaded_file_url
-        return render(request, template, context)
-    return render(request, template) #TODO: make sure the .sav file appears in the data/nn_model folder
+
+    def getModelList(context):
+        loc = FileSystemStorage().location
+        file_names = [name for name in os.listdir(loc) if name.endswith('.sav')]
+
+        config = configparser.ConfigParser()
+        config.read('model.ini')
+        selected_model_path = config['Path']['ModelPath']
+
+        table_data = []
+        for fname in file_names:
+            temp_path_file = os.path.join(loc, fname)
+            temp_row = [None,
+                        fname,
+                        datetime.fromtimestamp(os.path.getctime(temp_path_file)).strftime('%Y-%m-%d %H:%M:%S')]
+            if temp_path_file == selected_model_path:
+                temp_row[0] = 1
+            table_data.append(temp_row)
+        context['table_data'] = table_data
+        return context
+
+    context = getModelList(context)
+    if request.method == "POST" and request.FILES:
+        if request.FILES['inputFileName']:
+            model = request.FILES['inputFileName']
+            fs = FileSystemStorage()
+            file_name = fs.save(model.name, model)
+            if file_name.endswith('.sav'):
+                print("Model name %s" % (model.name))
+                print("Model size: %s" % (model.size))
+                uploaded_file_url = fs.url(file_name)
+                print("Uploaded file url: %s" % (uploaded_file_url))
+                context['uploaded_file_url'] = uploaded_file_url
+                return render(request, template, context)
+            else:
+                print("Wrong file extension.")
+                context['wrong_file_extension'] = True
+                return render(request, template, context)
+    elif request.method == "POST" and request.POST:
+        if request.POST['selectFileName']:
+            success = writeModelPath(request.POST['selectFileName'])
+            if success is True:
+                context['changed_file_name'] = request.POST['selectFileName']
+            context = getModelList(context)
+            return render(request, template, context)
+    return render(request, template, context)
+
+
+# This function is just for writing the changed model name to a config file
+def writeModelPath(name):
+    try:
+        path = os.path.join(FileSystemStorage().location, name)
+        config = configparser.ConfigParser()
+        config['Path'] = {'ModelPath': path}
+        with open('model.ini', 'w') as configfile:
+            config.write(configfile)
+        print("write_success")
+        return True
+    except:
+        return False
+
+
 
 
 

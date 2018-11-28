@@ -247,7 +247,7 @@ class NeuralNetEssentials:
             result += [[
                 tempdatetime.strftime("%Y-%m-%d"),
                 predict.tolist()[0],
-                       tempdatetime,
+                        tempdatetime,
                        tempdatetime + timedelta(seconds=300)]]
         return result
         # model = joblib.load(modelPath)

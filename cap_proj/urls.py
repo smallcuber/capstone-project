@@ -3,7 +3,7 @@ from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.conf.urls import include
-from data.views import providers, scheduleview, patientovview, performanceview, PatientInfo, ProviderInfo, userLogin, userLogout, uploadModel
+from data.views import providers, scheduleview, patientovview, performanceview, PatientInfo, ProviderInfo, userLogin, userLogout, uploadModel#, modelConfig
 
 urlpatterns = [
     path(r'', admin.site.urls),
@@ -17,6 +17,7 @@ urlpatterns = [
     path('userlogin/', userLogin, name='login'),
     path('userlogout/', userLogout, name='logout'),
     path('modelupload/', uploadModel, name='modelupload'),
+    # path('modelConfig/', modelConfig, name='modelConfig'),
     path(r'data/', include('data.urls')),
 ]
 

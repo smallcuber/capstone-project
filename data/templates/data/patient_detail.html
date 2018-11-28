@@ -2,9 +2,9 @@
 {% block title %}Patient Detail{% endblock %}
 {% block body %}
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-{% for info, value in patientInfo.items %}
-    <h1>{{ info }}: {{ value }} </h1>
-{% endfor %}
+{#{% for info, value in patientInfo.items %}#}
+{#    <h1>{{ info }}: {{ value }} </h1>#}
+{#{% endfor %}#}
 <div class="w3" style="padding: 15px">
 
       <div class="w3-white w3-text-grey w3-card-4">
@@ -17,8 +17,8 @@
         </div>
         <div class="w3-container">
           <p>{{ patientInfo.patient_id }}</p> <!-- this could link to provider's position !-->
-          <p>XXX Department</p> <!--provider's department !-->
-          <p>XXXX@stjoseph.ca</p> <!--provider's email !-->
+          <p>XXX Hospital</p> <!--provider's department !-->
+          <p>XXXX@XXXX.ca</p> <!--provider's email !-->
           <p>(555) 555-5555</p>  <!--provider's telephone !-->
           <hr>
 
@@ -27,19 +27,17 @@
                   <i class="fa fa-asterisk fa-fw w3-margin-right w3-text-teal"></i>Statistics
               </b>
           </p>
-          <p>Success Appointments ({{ patientInfo.completed }} out of {{ patientInfo.sum }}) %</p>
+          <p>Success Appointments {{ patientInfo.complete_rate}}% ({{ patientInfo.completed }} out of {{ patientInfo.sum }})</p>
           <div class="w3-light-grey w3-round-xlarge w3-small">
             <div class="w3-container w3-center w3-round-xlarge w3-teal" style="width:{{ patientInfo.complete_rate }}%">{{ patientInfo.complete_rate}}%</div>
           </div>
-          <p>% Over Time on Average</p>
+          <p>No Show {{ patientInfo.no_show_rate }}%, ({{ patientInfo.noshow }} out of {{ patientInfo.sum }})</p>
           <div class="w3-light-grey w3-round-xlarge w3-small">
-            <div class="w3-container w3-center w3-round-xlarge w3-teal" style="width:10%">
-              <div class="w3-center w3-text-white">10%</div>
-            </div>
+            <div class="w3-container w3-center w3-round-xlarge w3-teal" style="width:{{ patientInfo.no_show_rate }}%">{{ patientInfo.no_show_rate }}%</div>
           </div>
-          <p>No Show %</p>
+            <p>Canceled {{ patientInfo.canceled_rate }}%, ({{ patientInfo.canceled }} out of {{ patientInfo.sum }})</p>
           <div class="w3-light-grey w3-round-xlarge w3-small">
-            <div class="w3-container w3-center w3-round-xlarge w3-teal" style="width:15%">15%</div>
+            <div class="w3-container w3-center w3-round-xlarge w3-teal" style="width:{{ patientInfo.canceled_rate }}%">{{ patientInfo.canceled_rate }}%</div>
           </div>
           <br>
 

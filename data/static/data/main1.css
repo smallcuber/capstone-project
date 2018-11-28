@@ -201,6 +201,7 @@ body {
 
 /* main box container */
 .main {
+	padding: 10px;
 	/*display: flex;*/
 	/*flex-flow: row wrap;*/
 }
