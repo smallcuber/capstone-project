@@ -25,6 +25,7 @@ SECRET_KEY = 'p5do#uhp-nc+ia!uj0$o_@kt6fmyc2h+3b=pwvx_k2dz!f^a*y'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# Add the Django host server ip on the list
 ALLOWED_HOSTS = ['192.168.1.6', '127.0.0.1']
 
 

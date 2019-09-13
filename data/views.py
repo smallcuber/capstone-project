@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.shortcuts import render, redirect
 from .models import Event
 from django.contrib.auth.decorators import login_required, permission_required
-from django.db.models import Value, Count, Q
+from django.db.models import Value, Count, Q, functions
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login, logout
 from django.core.files.storage import FileSystemStorage
@@ -108,7 +108,7 @@ def scheduleview(request):  #
             )
             result = featureData.predictResults(
                 # "data/nn_model/model-2018-11-16 07810894340351556 and 10.sav"
-                modelPath= "data/nn_model/model-2018-11-16 07810894340351556 and 10.sav" # selected_model_path
+                modelPath= selected_model_path
             )
             return JsonResponse(result, safe=False)
 
@@ -120,7 +120,7 @@ def patientovview_list(start_date, ende_date):  # Three types of event: Complete
     try:
         patientov_list_query_success = Event.objects. \
             values_list('checkout_time'). \
-            filter(checkout_time__isnull=False,
+            filter(checkin_time__isnull=False,
                    appointment_date__gte=start_date,
                    appointment_date__lte=ende_date)
         result.append(['Completed', patientov_list_query_success.count()])
@@ -163,6 +163,50 @@ def patientovview_cr_list(start_date, end_date):  # Canceled Appointment Reasons
     for cancel_reason_list in cancel_reason_list_query:
         result.append([cancel_reason_list['cancelation_reason'], cancel_reason_list['total']])
     print(result)
+    return result
+
+
+def patientovview_trend(start_date, end_date):  # The performance graph time trend monthly
+    result = [['Month','Percent']]
+    try:
+        monthly_total_trend_query = Event.objects. \
+            annotate(month=functions.TruncMonth('appointment_date')). \
+            values('month').all(). \
+            annotate(total=Count('month')). \
+            filter(Q(appointment_date__gte=start_date),
+                   Q(appointment_date__lte=end_date),
+                   (~Q(checkout_time='NULL')|
+                   Q(noshow_flag__isnull=True)|
+                    Q(canceled_flag__isnull=True))
+                   ). \
+            order_by('month')
+
+        complete_rate_total_trend_query = Event.objects. \
+            annotate(month=functions.TruncMonth('appointment_date')). \
+            values('month').all(). \
+            annotate(total=Count('month')). \
+            filter(Q(appointment_date__gte=start_date),
+                   Q(appointment_date__lte=end_date),
+                   ~Q(checkout_time='NULL')). \
+            order_by('month')
+
+    except ObjectDoesNotExist:
+        return result
+
+    print("1\n")
+    print(monthly_total_trend_query)
+    print("2\n")
+    print(complete_rate_total_trend_query)
+    print("3\n")
+
+
+    print(len(complete_rate_total_trend_query))
+    for i in range(len(complete_rate_total_trend_query)):
+        result.append([monthly_total_trend_query[i]['month'],
+                       (complete_rate_total_trend_query[i]['total'] / monthly_total_trend_query[i]['total'])*100])
+    print("4\n")
+    print(result)
+
     return result
 
 
@@ -302,8 +346,6 @@ class ProviderInfo(generic.ListView):  # Individual provider view
             completed_query = self.model.objects. \
                 values_list('provider_scheduled'). \
                 filter(provider_scheduled=self.kwargs['provider_scheduled'],
-                       noshow_flag__isnull=True,
-                       canceled_flag__isnull=True,
                        checkin_time__isnull=False)
             context['providerInfo'].update({'completed_count': completed_query.count()})
         except ObjectDoesNotExist:
@@ -341,6 +383,21 @@ def performanceview(request):
             array = patientovview_cr_list(start_date, end_date)
             print(array)
             return JsonResponse(array, safe=False)
+    return render(request, template)
+
+@login_required(login_url=login_redirect_link)
+@csrf_exempt
+def performanceTrend_view(request):
+    template = 'data/performance_trend.html'
+    if request.is_ajax() and request.method == 'POST':  # For Historical Appointment Summary graph
+        if request.POST.get('type') == 'overview':
+            start_date = request.POST.get('start_date')
+            end_date = request.POST.get('end_date')
+            array = patientovview_trend(start_date, end_date)
+            print(array)
+            return JsonResponse(array, safe=False)
+        else:
+            return JsonResponse('Unkown POST request type', safe=False)
     return render(request, template)
 
 

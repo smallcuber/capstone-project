@@ -1,0 +1,108 @@
+{% extends 'data/base.html' %}
+{% block title %}Patient Overview{% endblock %}
+{% block body %}
+    <form>
+        <div class="form-group">
+            <span for="donut-start-date">Start Date</span>
+            <input id="donut-start-date" class="form-control" type="date" value="2017-01-01" onchange="patientov_trend();patientov_trend_canceled_reasons() " />
+            <span for="donut-end-date">End Date</span>
+            <input id="donut-end-date" class="form-control" type="date" value="2017-01-30" onchange="patientov_trend();patientov_trend_canceled_reasons() " />
+        </div>
+    </form>
+    <div class="align-center" id="patientov_trend" style="height: 400px;"></div>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+
+    var out = '';
+
+        $(document).ready(function(){ //Set the default end date to present date
+            var today = new Date();
+            var year = today.getFullYear();
+            var month = today.getMonth() + 1; //Because Month starts at 0
+            var day = today.getDate();
+            if (day<10){
+                day = '0' + day;
+            }
+            if (month<10){
+                month = '0' + month;
+            }
+            var today = year + '-' + month + '-' + day;
+            console.log(today);
+           document.getElementById("donut-end-date").defaultValue = today;
+        });
+
+      google.charts.load("current", {packages:["corechart"]});
+      google.charts.setOnLoadCallback(patientov_trend);
+
+    function patientov_trend() {
+        var endpoint = {% url 'performance_trend' %};
+        console.log("1");
+        $.ajax({
+            method: "POST",
+            url: endpoint,
+            data: {
+                'type': 'overview',
+                'start_date': $('#donut-start-date').val(),
+                'end_date': $('#donut-end-date').val()
+            },
+            dataType: 'json',
+            success: function (arrays) {
+                console.log("2a");
+                console.log(arrays);
+                var array2d = arrays;
+                var dataTable = new google.visualization.DataTable();
+                //var dataTable = google.visualization.arrayToDataTable(array2d);
+                dataTable.addColumn({type: 'date', id: 'Date'});
+                dataTable.addColumn({type: 'number', id: 'Percentage'});
+
+                for (var i = 0; i < (arrays.length - 1); i++){
+                    console.log('array ' + i);
+                    console.log(arrays[i]);
+                    dataTable.addRow([onlyDate(arrays[i+1][0]), arrays[i+1][1]])
+                }
+                console.log(dataTable);
+                ticks_month = [];
+                for (var i1 = 0; i1 < (arrays.length - 1); i1++){
+                    ticks_month.push(onlyDate(arrays[i1+1][0]));
+                }
+
+                var options = {
+                    title: 'Monthly Complete Rate Over time',
+                    width: 900,
+                    height: 500,
+                    hAxis: {
+                        //format: 'yy-M-d',
+                        //gridlines: {count: 15},
+                        ticks: ticks_month
+                    },
+                    vAxis: {
+                        gridlines: {color: 'none'},
+                        minValue: 0,
+                        maxValue: 100
+                    }
+                  };
+
+                  var chart = new google.visualization.LineChart(document.getElementById('patientov_trend'));
+                  chart.draw(dataTable, options);
+              },
+              error: function (error_data) {
+                 console.log("2b");
+                 console.log(error_data)
+              }
+          });
+      }
+
+    function onlyDate(datetime) {
+        date_single = new Date(datetime);
+        console.log("datetime");
+        console.log(datetime);
+        outdate = new Date(date_single.getFullYear(), date_single.getMonth());
+        console.log('outdate\n');
+        console.log(date_single.getFullYear(),date_single.getMonth());
+        console.log(outdate);
+        return outdate;
+    }
+
+
+    </script>
+{% endblock %}

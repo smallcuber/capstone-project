@@ -1,9 +1,6 @@
 {% extends 'data/base.html' %}
 {% block title %}Patient Overview{% endblock %}
 {% block body %}
-
-    <div class="align-center" id="patientov" style="height: 400px;"></div>
-    <div class="align-center" id="patientov-canceled-reason" style="height: 400px;"></div>
     <form>
         <div class="form-group">
             <span for="donut-start-date">Start Date</span>
@@ -12,7 +9,8 @@
             <input id="donut-end-date" class="form-control" type="date" value="2017-01-30" onchange="patientov();patientov_canceled_reasons() " />
         </div>
     </form>
-
+    <div class="align-center" id="patientov" style="height: 400px;"></div>
+    <div class="align-center" id="patientov-canceled-reason" style="height: 400px;"></div>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
 

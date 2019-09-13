@@ -4,10 +4,9 @@
     {% load staticfiles %}
 <link rel="stylesheet" type="text/css" href="{% static 'data/schedule.css' %}">
 <form class="form" method="post" id="empname" data-validate-username-url="#">
-    <div  class="row">
-
+    <div class="row">
         <div class="col-md-4">
-           <label for="dropdownPatientID">Patient ID</label>
+            <label for="dropdownPatientID">Patient ID</label>
             <div class="dropdown">
                 <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownPatientID"
                         value=""
@@ -17,7 +16,8 @@
                     Enter Patient ID
                 </button>
                 <div id="menuPatientID" class="dropdown-menu" aria-labelledby="dropdownPatientID">
-                        <input type="search" class="form-control" id="patientID" placeholder="Search Patient ID" autofocus="autofocus" onkeyup="filter(this.value)">
+                    <input type="search" class="form-control" id="patientID" placeholder="Search Patient ID"
+                           autofocus="autofocus" onkeyup="filter(this.value)">
                     <div id="menuItemsPatientID"></div>
                     <div id="emptyPatientID" class="dropdown-header">No ID found</div>
                 </div>
@@ -25,7 +25,7 @@
         </div>
 
         <div class="col-md-4">
-           <label for="dropdownProviderNames">Provider Name</label>
+            <label for="dropdownProviderNames">Provider Name</label>
             <div class="dropdown">
                 <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownProviderNames"
                         value=""
@@ -35,7 +35,8 @@
                     Select Names
                 </button>
                 <div id="menu" class="dropdown-menu" aria-labelledby="dropdownProviderNames">
-                        <input type="search" class="form-control" id="providerNames" placeholder="Search provider names" autofocus="autofocus" onkeyup="filter(this.value)">
+                    <input type="search" class="form-control" id="providerNames" placeholder="Search provider names"
+                           autofocus="autofocus" onkeyup="filter(this.value)">
                     <div id="menuItems"></div>
                     <div id="empty" class="dropdown-header">No provider found</div>
                 </div>
@@ -53,7 +54,8 @@
                     Select Names
                 </button>
                 <div id="menuProcedure" class="dropdown-menu" aria-labelledby="dropdownProcedureNames">
-                        <input type="search" class="form-control" id="procedureNames" placeholder="Search procedure names" autofocus="autofocus" onkeyup="filter(this.value)">
+                    <input type="search" class="form-control" id="procedureNames" placeholder="Search procedure names"
+                           autofocus="autofocus" onkeyup="filter(this.value)">
                     <div id="menuItemsProcedure"></div>
                     <div id="emptyProcedure" class="dropdown-header">No procedure found</div>
                 </div>
@@ -62,41 +64,47 @@
 
         <div class="col-md-4">
             <label for="inputAppointmentDuration">Procedure Duration</label>
-            <input type="number" class="form-control" id="inputAppointmentDuration" placeholder="Enter Appointment Duration" step="5" value="30" style="width: 100px"/>
+            <input type="number" class="form-control" id="inputAppointmentDuration"
+                   placeholder="Enter Appointment Duration" step="5" value="30" style="width: 100px"/>
         </div>
 
 
-
-
-      <div class="col-md-4">
-        <div class="form-group float-left">
-            <label for="schedule-start-date">Start Date</label><input id="schedule-start-date" class="form-control" type="date" value="2017-01-01" style="width: 170px"/>
+        <div class="col-md-4">
+            <div class="form-group float-left">
+                <label for="schedule-start-date">Start Date</label><input id="schedule-start-date" class="form-control"
+                                                                          type="date" value="2017-01-01"
+                                                                          style="width: 170px"/>
+            </div>
         </div>
+        {#  hidden because the Machine Learning program does not need it #}
+        <div class="col-md-4" hidden>
+            <div class="form-group">
+                <label for="schedule-start-time">Start Time</label><input id="schedule-start-time" class="form-control"
+                                                                          type="time" value="10:10"
+                                                                          style="width: 150px"/>
+            </div>
         </div>
         <div class="col-md-4">
         <div class="form-group">
-            <label for="schedule-start-time">Start Time</label><input id="schedule-start-time" class="form-control" type="time" value="10:10" style="width: 150px"/>
-        </div>
-        </div>
-        </div>
-
-        <div class="col-md-4">
-        <div class="form-group">
-            <label for="dropdownProcedureNames">Prediction  (days)</label>
+            <label for="dropdownLength">Prediction Length (days)</label>
             <div class="form-group dropdown show">
-                <button class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownLength" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" value="">
-                Prediction Length
+                <button class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownLength"
+                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" value="">
+                    Prediction Length
                 </button>
 
                 <div id="menuLength" class="dropdown-menu" aria-labelledby="dropdownLength">
-                    <input type="button" class="dropdown-item" value="3" />
-                    <input type="button" class="dropdown-item" value="7" />
-                    <input type="button" class="dropdown-item" value="15" />
-                    <input type="button" class="dropdown-item" value="30" />
-                </div>
+                    <input type="button" class="dropdown-item" value="3"/>
+                    <input type="button" class="dropdown-item" value="7"/>
+                    <input type="button" class="dropdown-item" value="15"/>
+                    <input type="button" class="dropdown-item" value="30"/>
                 </div>
             </div>
         </div>
+    </div>
+    </div>
+
+
 
     <br/><br/><br/>
     <div class="form-group">
@@ -343,6 +351,7 @@
             var dataTable = new google.visualization.DataTable();
             dataTable.addColumn({type: 'string', id: 'Date'});
             dataTable.addColumn({type: 'string', id: 'Category'});
+            dataTable.addColumn({type: 'string', role: 'style'});
             dataTable.addColumn({type: 'date', id: 'Start'});
             dataTable.addColumn({type: 'date', id: 'End'});
             for (var i = 0; i < result.length; i++){
@@ -350,28 +359,30 @@
                 bad_or_comp_string = 'SUCCESS';
                 if( result[i][1] === 1){
                     var bad_or_comp_string = 'SUCCESS';
+                    var ColorValue = '#3498DB';
                  }else if( result[i][1] === 0){
                     var bad_or_comp_string = 'FAIL';
+                    var ColorValue = '#CB4335';
                  }
-
-
-                dataTable.addRow([result[i][0], {# result[i][1].toString() #} bad_or_comp_string, onlyTime(result[i][2]), onlyTime(result[i][3])]);
+                dataTable.addRow([result[i][0], bad_or_comp_string, ColorValue, onlyTime(result[i][2]), onlyTime(result[i][3])]);
             }
 
-            var colors = [];
-            var colorMap = {
-                FAIL: '#CB4335',
-                SUCCESS: '#3498DB'
-             };
-            for (var o = 0; o < dataTable.getNumberOfRows(); o++) {
-                colors.push(colorMap[dataTable.getValue(o, 1)]);
-             }
+            {#var color = [];#}
+            {#var colorMap = {#}
+            {#    FAIL: '#CB4335',#}
+            {#    SUCCESS: '#3498DB'#}
+            {# };#}
+            {#for (var o = 0; o < dataTable.getNumberOfRows(); o++) {#}
+            {#    color.push(colorMap[dataTable.getValue(o, 1)]);#}
+            {# }#}
 
             var options = {
-                timeline: {colorByRowLabel: false},
-                'height': inHeight,
-                colors: colors
-            };
+                timeline: {
+                    colorByRowLabel: false},
+                    'height': inHeight,
+                    {#colors: color#}
+
+                };
             chart.draw(dataTable, options);
 {#            dataTable.addColumn({type: 'string', id: 'Room'});#}
 {#            dataTable.addColumn({type: 'string', id: 'Name'});#}
