@@ -1,0 +1,2 @@
+Combinations_id,Combinations_name,Avg_Accuracy
+"0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11","Procedure Name, Provider Name, Appointment Duration, year, Month, Day, Hour, Minute, Weekday, Completed Counts, Canceled Counts, No show Counts",0.7688301119023396
