@@ -4,7 +4,7 @@ from django.views import generic
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render, redirect
-from .models import Event
+from .models import Event, Respirology
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Value, Count, Q, functions
 from django.views.decorators.csrf import csrf_exempt
@@ -22,7 +22,7 @@ login_redirect_link = '/userlogin/'
 def providers_list(max_results=0, name_starts_with=''):
     name_list = []
     if name_starts_with:
-        name_list_query = Event.objects.values('provider_scheduled', 'provider_name').filter(
+        name_list_query = Respirology.objects.values('provider_scheduled', 'provider_name').filter(
             provider_name__contains=name_starts_with).annotate(provider_count=Count("provider_name"))[:max_results]
         name_list = [name for name in name_list_query]
     return name_list
@@ -43,7 +43,7 @@ def providers(request):
 
 
 def scheduleview_list(max_results=0):
-    schedule_list_query = Event.objects.order_by('appointment_date'). \
+    schedule_list_query = Respirology.objects.order_by('appointment_date'). \
                               values_list('provider_name', 'patient_id', 'appointment_date', 'appt_durantion')[
                           :max_results]
     schedule_list = [[str(field) for field in schedule] for schedule in schedule_list_query]
@@ -63,15 +63,15 @@ def scheduleview(request):  #
             return JsonResponse(array, safe=False)
         elif request.POST.get("type") == 'labels':
             # Query get list of provider names
-            providers_list_query = Event.objects.values('provider_name'). \
+            providers_list_query = Respirology.objects.values('provider_name'). \
                 annotate(provider_count=Count("provider_name"))
             providers_list = [provider['provider_name'] for provider in providers_list_query]
             # Query get list of procedure names
-            procedureName_list_query = Event.objects.values('procedure_name'). \
+            procedureName_list_query = Respirology.objects.values('procedure_name'). \
                 annotate(procedure_count=Count('procedure_name'))
             procedureName_list = [procedureNames['procedure_name'] for procedureNames in procedureName_list_query]
             # Query get list of patient ids
-            patient_id_list_query = Event.objects.values('patient_id'). \
+            patient_id_list_query = Respirology.objects.values('patient_id'). \
                 annotate(patient_id_count=Count('patient_id'))
             patient_id_list = [patient_id['patient_id'] for patient_id in patient_id_list_query]
             labels = [providers_list, procedureName_list, patient_id_list]
@@ -98,7 +98,7 @@ def scheduleview(request):  #
 
             featureData = NeuralNetEssentials()
             featureData.convertFeaturesApplication(
-                combination=[0, 1, 2, 3, 4, 5, 6, 8, 9, 10],
+                combination=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
                 date=app_date,
                 patient_id=patient_id,
                 procedure_name=procedure_name,
@@ -118,7 +118,7 @@ def scheduleview(request):  #
 def patientovview_list(start_date, ende_date):  # Three types of event: Completed, No Show, Canceled
     result = [['Event', 'Counts']]
     try:
-        patientov_list_query_success = Event.objects. \
+        patientov_list_query_success = Respirology.objects. \
             values_list('checkout_time'). \
             filter(checkin_time__isnull=False,
                    appointment_date__gte=start_date,
@@ -127,7 +127,7 @@ def patientovview_list(start_date, ende_date):  # Three types of event: Complete
     except ObjectDoesNotExist:
         result.append(['Completed', 0])
     try:
-        patientov_list_query_noshow = Event.objects. \
+        patientov_list_query_noshow = Respirology.objects. \
             values_list('noshow_flag'). \
             filter(noshow_flag__isnull=False,
                    appointment_date__gte=start_date,
@@ -136,7 +136,7 @@ def patientovview_list(start_date, ende_date):  # Three types of event: Complete
     except ObjectDoesNotExist:
         result.append(['No Show', 0])
     try:
-        patientov_list_query_canceled = Event.objects. \
+        patientov_list_query_canceled = Respirology.objects. \
             values_list('canceled_flag'). \
             filter(canceled_flag__isnull=False,
                    appointment_date__gte=start_date,
@@ -150,7 +150,7 @@ def patientovview_list(start_date, ende_date):  # Three types of event: Complete
 def patientovview_cr_list(start_date, end_date):  # Canceled Appointment Reasons graph
     result = [['Reason', 'Counts']]
     try:
-        cancel_reason_list_query = Event.objects. \
+        cancel_reason_list_query = Respirology.objects. \
             values('cancelation_reason').all(). \
             filter(appointment_date__gte=start_date,
                    appointment_date__lte=end_date). \
@@ -169,7 +169,7 @@ def patientovview_cr_list(start_date, end_date):  # Canceled Appointment Reasons
 def patientovview_trend(start_date, end_date):  # The performance graph time trend monthly
     result = [['Month','Percent']]
     try:
-        monthly_total_trend_query = Event.objects. \
+        monthly_total_trend_query = Respirology.objects. \
             annotate(month=functions.TruncMonth('appointment_date')). \
             values('month').all(). \
             annotate(total=Count('month')). \
@@ -181,7 +181,7 @@ def patientovview_trend(start_date, end_date):  # The performance graph time tre
                    ). \
             order_by('month')
 
-        complete_rate_total_trend_query = Event.objects. \
+        complete_rate_total_trend_query = Respirology.objects. \
             annotate(month=functions.TruncMonth('appointment_date')). \
             values('month').all(). \
             annotate(total=Count('month')). \
@@ -213,7 +213,7 @@ def patientovview_trend(start_date, end_date):  # The performance graph time tre
 def patient_list(max_results=0, id_starts_with=''):  # Patient name list
     name_list = []
     if id_starts_with:
-        name_list_query = Event.objects.values('patient_id').filter(
+        name_list_query = Respirology.objects.values('patient_id').filter(
             patient_id__contains=id_starts_with).annotate(count=Count("patient_id"))[:max_results]
         name_list = [name for name in name_list_query]
     return name_list
@@ -244,7 +244,7 @@ def patientovview(request):
 
 
 class PatientInfo(generic.ListView):  # Individual patient view
-    model = Event
+    model = Respirology
     template_name = 'data/patient_detail.html'
 
     def get_context_data(self, **kwargs):
@@ -314,7 +314,7 @@ class PatientInfo(generic.ListView):  # Individual patient view
 
 
 class ProviderInfo(generic.ListView):  # Individual provider view
-    model = Event
+    model = Respirology
     template_name = 'data/provider_detail.html'
 
     def get_context_data(self, **kwargs):

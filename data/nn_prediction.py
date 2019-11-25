@@ -46,7 +46,7 @@ class NeuralNetEssentials:
         # Get completed appointments count for the patient
         if 9 in combination:
             complete_count_query = """
-            SELECT COUNT(*) FROM [cap_project].[dbo].[event] b 
+            SELECT COUNT(*) FROM [cap_project].[dbo].[Respirology] b 
             WHERE b.Patient_ID = '%s' AND b.[CheckIn_Time] is not null AND b.[CheckIn_Time] < '%s' AND (b.[NoShow_Flag] is NULL AND b.[Canceled_Flag] is NULL)
             GROUP BY b.[Patient_ID]
             """ % (patient_id, date)
@@ -61,7 +61,7 @@ class NeuralNetEssentials:
         # Get cancelled appointments count for the patient
         if 10 in combination:
             cancel_count_query = """
-            SELECT TOP 1 COUNT(*) FROM [cap_project].[dbo].[event] c 
+            SELECT TOP 1 COUNT(*) FROM [cap_project].[dbo].[Respirology] c 
             WHERE c.[Appointment_Date] < '%s' AND (c.[Canceled_Flag] is NOT NULL)  AND c.[Patient_ID] = '%s'
             GROUP BY c.[Patient_ID]
             """ % (date, patient_id)
@@ -75,7 +75,7 @@ class NeuralNetEssentials:
         # Get no show appointments count for the patient
         if 11 in combination:
             noshow_count_query = """
-                    SELECT TOP 1 COUNT(*) FROM [cap_project].[dbo].[event]
+                    SELECT TOP 1 COUNT(*) FROM [cap_project].[dbo].[Respirology]
                     WHERE [Appointment_Date] < '%s' AND ([NoShow_Flag] is NOT NULL)  AND [Patient_ID] = '%s'
                     GROUP BY [Patient_ID]
                     """ % (date, patient_id)
@@ -92,9 +92,10 @@ class NeuralNetEssentials:
                 [Appt_Durantion]
                 ,[Appointment_Date]
                 ,[Provider_Name]
-                FROM [cap_project].[dbo].[event]
-                WHERE [CheckIn_Time] = 'NULL' AND [NoShow_Flag] IS NULL AND [Canceled_Flag] IS NULL AND [Provider_Name] = '%s' AND [Appointment_Date] >= '%s' AND [Appointment_Date] < DATEADD(DAY, %s ,'%s')
+                FROM [cap_project].[dbo].[Respirology]
+                WHERE [CheckIn_Time] = NULL AND [NoShow_Flag] IS NULL AND [Canceled_Flag] IS NULL AND [Provider_Name] = '%s' AND [Appointment_Date] >= '%s' AND [Appointment_Date] < DATEADD(DAY, %s ,'%s')
                 """ % (provider_name, date, prediction_length, date)
+            print(reserved_appts_query)
             cursor.execute(reserved_appts_query)
             reserved_appts_arrary = np.array(cursor.fetchall())
             # Loop through every time schedule in that duration
@@ -129,7 +130,7 @@ class NeuralNetEssentials:
         if 1 in combination:
             provider_name_query = """
                     SELECT [Provider_Name]
-                    FROM [cap_project].[dbo].[event]
+                    FROM [cap_project].[dbo].[Respirology]
                     GROUP BY [Provider_Name]
                     ORDER BY [Provider_Name]
                     """
@@ -141,7 +142,7 @@ class NeuralNetEssentials:
         if 0 in combination:
             procedure_name_query = """
                     SELECT [Procedure_Name]
-                    FROM [cap_project].[dbo].[event]
+                    FROM [cap_project].[dbo].[Respirology]
                     GROUP BY [Procedure_Name]
                     ORDER BY [Procedure_Name]
                     """
@@ -169,7 +170,7 @@ class NeuralNetEssentials:
         daylist = np.array(range(1, 32))
         hourlist = np.array(range(8, 17))
         # Minute with step size of 5, like 15, 20, 30, 45, etc...
-        minutelist = np.array(range(0, 61, 5))
+        minutelist = np.array(range(0, 60, 5))
         weeklist = np.array(range(1, 8))
 
         # Convert the time list to LabelBinarizer Object for vectorizing input (features)
