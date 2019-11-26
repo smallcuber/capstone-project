@@ -175,9 +175,9 @@ def patientovview_trend(start_date, end_date):  # The performance graph time tre
             annotate(total=Count('month')). \
             filter(Q(appointment_date__gte=start_date),
                    Q(appointment_date__lte=end_date),
-                   (~Q(checkout_time='NULL')|
-                   Q(noshow_flag__isnull=True)|
-                    Q(canceled_flag__isnull=True))
+                   (Q(checkin_time__isnull=False)|
+                   Q(noshow_flag__isnull=False)|
+                    Q(canceled_flag__isnull=False))
                    ). \
             order_by('month')
 
@@ -187,7 +187,7 @@ def patientovview_trend(start_date, end_date):  # The performance graph time tre
             annotate(total=Count('month')). \
             filter(Q(appointment_date__gte=start_date),
                    Q(appointment_date__lte=end_date),
-                   ~Q(checkout_time='NULL')). \
+                   Q(checkin_time__isnull=False)). \
             order_by('month')
 
     except ObjectDoesNotExist:
